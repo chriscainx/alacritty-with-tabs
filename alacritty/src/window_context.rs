@@ -478,7 +478,13 @@ impl WindowContext {
             TabBarHit::Tab(index) => self.switch_tab(index),
             TabBarHit::CloseButton(index) => {
                 if index == self.active_tab_index {
-                    self.close_active_tab();
+                    if !self.close_active_tab() {
+                        // Last tab: close the entire window.
+                        let _ = self.event_proxy.send_event(Event::new(
+                            crate::event::EventType::CloseTab,
+                            self.display.window.id(),
+                        ));
+                    }
                 } else {
                     // Close a background tab.
                     let vec_index = if index > self.active_tab_index {

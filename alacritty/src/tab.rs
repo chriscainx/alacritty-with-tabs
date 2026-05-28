@@ -77,7 +77,7 @@ impl TabBar {
     /// the nearest cell boundary for clean grid alignment.
     pub fn compute_height(&mut self, cell_height: f32) {
         if self.config.height == 0 {
-            self.height_px = cell_height;
+            self.height_px = cell_height * 2.0;
         } else {
             self.height_px = self.config.height as f32;
         }
