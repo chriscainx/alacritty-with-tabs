@@ -1487,21 +1487,11 @@ impl Display {
         // Draw all rectangles first.
         renderer.draw_rects(size_info, &glyph_cache.font_metrics(), rects);
 
-        // Draw text centered vertically in the tab bar.
-        // Shift the projection by half a cell so that the text grid line
-        // maps to the midpoint between two tab bar grid lines.
-        let text_line = size_info.screen_lines();
+        // Draw text on top of rectangles.
+        // Use the bottom line of the tab bar for better visual balance
+        // when the bar is an even number of lines (e.g. 2).
+        let text_line = size_info.screen_lines() + tab_lines - 1;
         let cell_w = size_info.cell_width();
-
-        // Only shift if tab bar is an even number of lines (needs centering).
-        let shift_px = if tab_lines % 2 == 0 {
-            size_info.cell_height() * 0.5
-        } else {
-            0.0
-        };
-        let shifted_size_info = size_info.with_padding_y_offset(shift_px);
-        renderer.resize(&shifted_size_info);
-        renderer.set_full_viewport(size_info);
 
         for (i, title) in tab_bar.titles.iter().enumerate() {
             let tab_x = size_info.padding_x() + i as f32 * tab_w;
@@ -1551,8 +1541,9 @@ impl Display {
         // "+" button text.
         if tab_bar.config.show_new_button {
             let btn_x = size_info.width() - size_info.padding_x() - new_button_w + 4.0;
-            let col = ((btn_x + new_button_w * 0.3 - size_info.padding_x()) / cell_w)
-                .max(0.0) as usize;
+            // Center the "+" horizontally within the button.
+            let btn_center = btn_x + (new_button_w - 12.0) * 0.5;
+            let col = ((btn_center - size_info.padding_x()) / cell_w).max(0.0) as usize;
             renderer.draw_string(
                 Point::new(text_line, Column(col)),
                 colors.text,
@@ -1562,9 +1553,6 @@ impl Display {
                 glyph_cache,
             );
         }
-
-        // Restore the main projection for the terminal grid.
-        renderer.resize(size_info);
     }
 
     /// Draw an indicator for the position of a line in history.
