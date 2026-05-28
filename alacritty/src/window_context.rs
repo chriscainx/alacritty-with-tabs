@@ -252,6 +252,10 @@ impl WindowContext {
         let tab_bar_height = (display.size_info.cell_height() * 1.6).ceil();
         display.size_info.add_top_padding(tab_bar_height);
 
+        // Mark renderer for resize so the projection matrix accounts for
+        // the increased padding_y.
+        display.pending_renderer_update = Some(Default::default());
+
         info!(
             "PTY dimensions: {:?} x {:?}",
             display.size_info.screen_lines(),
