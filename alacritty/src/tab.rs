@@ -104,11 +104,6 @@ impl TabBar {
         }
 
         let tab_count = self.titles.len();
-        let close_button_width = if self.config.show_close_button {
-            size_info.cell_width() * 1.5
-        } else {
-            0.0
-        };
         let new_button_width = if self.config.show_new_button {
             self.height_px
         } else {
@@ -124,19 +119,21 @@ impl TabBar {
             available_width
         };
 
-        // Check "+" new tab button first (rightmost).
-        let new_btn_x = size_info.width() - size_info.padding_x() - new_button_width;
-        if self.config.show_new_button && mouse_x >= new_btn_x {
+        // "+" new tab button at the right edge.
+        let new_btn_start = size_info.width() - size_info.padding_x() - new_button_width;
+        if self.config.show_new_button && mouse_x >= new_btn_start {
             return Some(TabBarHit::NewButton);
         }
 
         let left = size_info.padding_x();
         for (i, _) in self.titles.iter().enumerate() {
             let tab_x = left + i as f32 * tab_width;
-            let tab_right = (tab_x + tab_width).min(new_btn_x);
+            let tab_right = (tab_x + tab_width).min(new_btn_start);
 
             if mouse_x >= tab_x && mouse_x < tab_right {
-                if self.config.show_close_button && mouse_x >= tab_right - close_button_width
+                // Close button: ~1.2 cells from the right edge, matches visual "×".
+                if self.config.show_close_button
+                    && mouse_x >= tab_right - size_info.cell_width() * 1.5
                 {
                     return Some(TabBarHit::CloseButton(i));
                 }

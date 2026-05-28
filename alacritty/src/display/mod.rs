@@ -1457,7 +1457,7 @@ impl Display {
 
         // "+" new tab button background.
         if tab_bar.config.show_new_button {
-            let btn_x = size_info.width() - size_info.padding_x() - new_button_w + text_pad;
+            let btn_x = size_info.width() - size_info.padding_x() - new_button_w;
             rects.push(RenderRect::new(
                 btn_x,
                 bar_y + btn_pad,
@@ -1523,7 +1523,7 @@ impl Display {
 
         // "+" button text.
         if tab_bar.config.show_new_button {
-            let btn_x = size_info.width() - size_info.padding_x() - new_button_w + text_pad;
+            let btn_x = size_info.width() - size_info.padding_x() - new_button_w;
             let btn_center = btn_x + (new_button_w - btn_pad * 2.0) * 0.5;
             let col = ((btn_center - size_info.padding_x()) / cw).max(0.0) as usize;
             renderer.draw_string(
