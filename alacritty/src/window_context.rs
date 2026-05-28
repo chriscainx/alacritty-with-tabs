@@ -253,7 +253,6 @@ impl WindowContext {
         tab_bar.compute_height(display.size_info.cell_height());
         let tab_bar_lines =
             (tab_bar.height_px / display.size_info.cell_height()).ceil() as usize;
-        display.tab_bar_height = tab_bar.height_px;
         display.tab_bar_lines = tab_bar_lines;
         display.size_info.reserve_lines(tab_bar_lines);
 

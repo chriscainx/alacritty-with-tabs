@@ -266,26 +266,6 @@ impl SizeInfo<f32> {
         self.screen_lines = cmp::max(self.screen_lines.saturating_sub(count), MIN_SCREEN_LINES);
     }
 
-    /// Add extra top padding for UI elements like a tab bar.
-    ///
-    /// This increases `padding_y` and recalculates `screen_lines` accordingly.
-    #[inline]
-    pub fn add_top_padding(&mut self, pixels: f32) {
-        self.padding_y += pixels;
-        let lines = (self.height - 2. * self.padding_y) / self.cell_height;
-        self.screen_lines = cmp::max(lines as usize, MIN_SCREEN_LINES);
-    }
-
-    /// Return a copy with `padding_y` offset by `delta` pixels.
-    ///
-    /// Used for rendering UI elements in the padding area (e.g., tab bar text).
-    #[inline]
-    pub fn with_padding_y_offset(&self, delta: f32) -> Self {
-        let mut copy = *self;
-        copy.padding_y += delta;
-        copy
-    }
-
     /// Check if coordinates are inside the terminal grid.
     ///
     /// The padding, message bar or search are not counted as part of the grid.
@@ -393,10 +373,6 @@ pub struct Display {
 
     /// The renderer update that takes place only once before the actual rendering.
     pub pending_renderer_update: Option<RendererUpdate>,
-
-    /// Height reserved for the tab bar at the top of the window.
-    /// Added to padding_y during handle_update to keep the grid below the tab bar.
-    pub tab_bar_height: f32,
 
     /// Number of grid lines reserved for the tab bar (0 if disabled).
     pub tab_bar_lines: usize,
@@ -567,7 +543,6 @@ impl Display {
             cursor_hidden: Default::default(),
             meter: Default::default(),
             ime: Default::default(),
-            tab_bar_height: 0.0,
             tab_bar_lines: 0,
         })
     }

@@ -73,8 +73,7 @@ impl TabBar {
 
     /// Recompute the tab bar height from font metrics.
     ///
-    /// If `config.height` is 0, uses `cell_height * 1.6` rounded up to
-    /// the nearest cell boundary for clean grid alignment.
+    /// If `config.height` is 0, defaults to `cell_height * 2`.
     pub fn compute_height(&mut self, cell_height: f32) {
         if self.config.height == 0 {
             self.height_px = cell_height * 2.0;
@@ -165,8 +164,6 @@ pub struct TabBarColors {
     pub inactive_bg: Rgb,
     /// Background of the active tab.
     pub active_bg: Rgb,
-    /// Background of a hovered tab.
-    pub hover_bg: Rgb,
     /// Text color for tab titles.
     pub text: Rgb,
     /// Text color for the active tab.
@@ -190,10 +187,10 @@ impl TabBarColors {
         let luminance = 0.299 * bg.r as f32 + 0.587 * bg.g as f32 + 0.114 * bg.b as f32;
         let is_dark = luminance < 128.0;
 
-        let (inactive_offset, hover_offset, text_brightness) = if is_dark {
-            (25.0, 45.0, 200)
+        let (inactive_offset, text_brightness) = if is_dark {
+            (25.0, 200)
         } else {
-            (-25.0, -45.0, 55)
+            (-25.0, 55)
         };
 
         let text_color = Rgb::new(text_brightness, text_brightness, text_brightness);
@@ -207,7 +204,6 @@ impl TabBarColors {
             bar_bg: lighten(bg, inactive_offset * 0.5),
             inactive_bg: lighten(bg, inactive_offset),
             active_bg: bg,
-            hover_bg: lighten(bg, hover_offset),
             text: text_color,
             active_text,
             close_button: Rgb::new(180, 60, 60),

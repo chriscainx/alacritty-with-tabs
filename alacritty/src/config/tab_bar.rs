@@ -14,16 +14,10 @@ pub struct TabBarConfig {
 
     /// Height of the tab bar in pixels.
     ///
-    /// Set to `0` for automatic height based on font size
-    /// (`cell_height * 1.6`).
+    /// Set to `0` for automatic height (2 × cell height).
     ///
     /// Default: `0`.
     pub height: u32,
-
-    /// Position of the tab bar: `"top"` or `"bottom"`.
-    ///
-    /// Default: `"top"`.
-    pub position: TabBarPosition,
 
     /// Whether to show the "+" new-tab button.
     ///
@@ -41,18 +35,8 @@ impl Default for TabBarConfig {
         Self {
             enabled: true,
             height: 0,
-            position: TabBarPosition::Top,
             show_new_button: true,
             show_close_button: true,
         }
     }
-}
-
-/// Where the tab bar is placed relative to the terminal grid.
-#[derive(ConfigDeserialize, Serialize, Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TabBarPosition {
-    /// Tab bar at the top of the window.
-    Top,
-    /// Tab bar at the bottom of the window.
-    Bottom,
 }
