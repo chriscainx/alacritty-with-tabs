@@ -1415,13 +1415,13 @@ impl Display {
 
         let mut rects = Vec::new();
 
-        // Tab bar full-width background.
+        // Tab bar full-width background — DEBUG: bright cyan to verify position.
         rects.push(RenderRect::new(
             size_info.padding_x(),
             bar_y,
             bar_width,
             bar_height,
-            colors.bar_bg,
+            Rgb::new(0, 255, 255),
             1.0,
         ));
 
