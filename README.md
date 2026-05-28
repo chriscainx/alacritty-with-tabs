@@ -2,7 +2,28 @@
     <img width="200" alt="Alacritty Logo" src="https://raw.githubusercontent.com/alacritty/alacritty/master/extra/logo/compat/alacritty-term%2Bscanlines.png">
 </p>
 
-<h1 align="center">Alacritty - A fast, cross-platform, OpenGL terminal emulator</h1>
+<h1 align="center">Alacritty with Tabs</h1>
+
+<p align="center">
+  <strong>A personal fork of Alacritty adding native multi-tab support on Windows and Linux.</strong>
+</p>
+
+> **⚠️ This is an experimental personal fork**, not upstream Alacritty. It adds
+> invasive architectural changes to support multiple terminal sessions within a
+> single window via a custom-rendered tab bar. See
+> [`docs/tabs.md`](./docs/tabs.md) for full documentation.
+>
+> **Key additions over upstream:**
+> - Tab bar at the bottom of the terminal with independent PTY sessions per tab
+> - Keyboard shortcuts: `Ctrl+Shift+T` (new), `Ctrl+Shift+W` (close),
+>   `Ctrl+Tab`/`Ctrl+Shift+Tab` (switch), `Ctrl+1`–`9` (jump)
+> - Mouse interaction: click to switch tabs, `×` to close, `+` to create
+> - Configurable via `[tab_bar]` section in `alacritty.toml`
+> - Branch: [`feature/windows-tabs`](https://github.com/kbxchrs/alacritty/tree/feature/windows-tabs)
+>
+> All other upstream Alacritty features are unchanged.
+
+---
 
 <p align="center">
   <img alt="Alacritty - A fast, cross-platform, OpenGL terminal emulator"
