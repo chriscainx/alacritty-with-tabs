@@ -1487,9 +1487,21 @@ impl Display {
         // Draw all rectangles first.
         renderer.draw_rects(size_info, &glyph_cache.font_metrics(), rects);
 
-        // Draw text on top: tab titles, close buttons, "+" button.
-        let text_line = size_info.screen_lines() + (tab_lines.saturating_sub(1) / 2);
+        // Draw text centered vertically in the tab bar.
+        // Shift the projection by half a cell so that the text grid line
+        // maps to the midpoint between two tab bar grid lines.
+        let text_line = size_info.screen_lines();
         let cell_w = size_info.cell_width();
+
+        // Only shift if tab bar is an even number of lines (needs centering).
+        let shift_px = if tab_lines % 2 == 0 {
+            size_info.cell_height() * 0.5
+        } else {
+            0.0
+        };
+        let shifted_size_info = size_info.with_padding_y_offset(shift_px);
+        renderer.resize(&shifted_size_info);
+        renderer.set_full_viewport(size_info);
 
         for (i, title) in tab_bar.titles.iter().enumerate() {
             let tab_x = size_info.padding_x() + i as f32 * tab_w;
@@ -1550,6 +1562,9 @@ impl Display {
                 glyph_cache,
             );
         }
+
+        // Restore the main projection for the terminal grid.
+        renderer.resize(size_info);
     }
 
     /// Draw an indicator for the position of a line in history.
