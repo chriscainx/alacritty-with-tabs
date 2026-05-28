@@ -82,3 +82,12 @@ that.
 Alacritty supports running multiple terminal emulators from the same Alacritty
 instance. New windows can be created either by using the `CreateNewWindow`
 keybinding action, or by executing the `alacritty msg create-window` subcommand.
+
+## Multi-Tab
+
+Alacritty supports multiple terminal sessions within a single window through a
+tab bar at the bottom of the terminal. Each tab is an independent terminal
+session with its own shell process.
+
+See [the multi-tab documentation](./tabs.md) for architecture details,
+configuration, and key bindings.
