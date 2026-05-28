@@ -7,10 +7,11 @@ use std::sync::Arc;
 use std::time::Instant;
 
 use alacritty_terminal::event_loop::Notifier;
+use alacritty_terminal::grid::Dimensions;
 use alacritty_terminal::sync::FairMutex;
 use alacritty_terminal::term::Term;
 
-use crate::config::tab_bar::{TabBarConfig, TabBarPosition};
+use crate::config::tab_bar::TabBarConfig;
 use crate::display::color::Rgb;
 use crate::display::SizeInfo;
 use crate::event::{
@@ -92,12 +93,13 @@ impl TabBar {
             return None;
         }
 
-        let bar_y = match self.config.position {
-            TabBarPosition::Top => size_info.padding_y() - self.height_px,
-            TabBarPosition::Bottom => size_info.height() - size_info.padding_y(),
-        };
+        // Tab bar occupies reserved grid lines at the bottom of the terminal area.
+        let tab_lines = (self.height_px / size_info.cell_height()).ceil() as usize;
+        let bar_y = size_info.padding_y()
+            + size_info.screen_lines() as f32 * size_info.cell_height();
+        let bar_height = tab_lines as f32 * size_info.cell_height();
 
-        if mouse_y < bar_y || mouse_y > bar_y + self.height_px {
+        if mouse_y < bar_y || mouse_y > bar_y + bar_height {
             return None;
         }
 

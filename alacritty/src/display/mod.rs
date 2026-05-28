@@ -398,6 +398,9 @@ pub struct Display {
     /// Added to padding_y during handle_update to keep the grid below the tab bar.
     pub tab_bar_height: f32,
 
+    /// Number of grid lines reserved for the tab bar (0 if disabled).
+    pub tab_bar_lines: usize,
+
     /// The ime on the given display.
     pub ime: Ime,
 
@@ -565,6 +568,7 @@ impl Display {
             meter: Default::default(),
             ime: Default::default(),
             tab_bar_height: 0.0,
+            tab_bar_lines: 0,
         })
     }
 
@@ -731,10 +735,8 @@ impl Display {
         let search_lines = usize::from(search_active);
         new_size.reserve_lines(message_bar_lines + search_lines);
 
-        // Reserve space for the tab bar if configured.
-        if self.tab_bar_height > 0.0 {
-            new_size.add_top_padding(self.tab_bar_height);
-        }
+        // Reserve grid lines for the tab bar at the bottom.
+        new_size.reserve_lines(self.tab_bar_lines);
 
         // Update resize increments.
         if config.window.resize_increments {
@@ -1391,7 +1393,7 @@ impl Display {
         self.renderer.draw_string(point, fg, bg, timing.chars(), &self.size_info, glyph_cache);
     }
 
-    /// Draw the tab bar in the padding area above the terminal grid.
+    /// Draw the tab bar in the reserved grid lines at the bottom of the terminal.
     fn draw_tab_bar_inner(
         renderer: &mut Renderer,
         glyph_cache: &mut GlyphCache,
@@ -1399,17 +1401,21 @@ impl Display {
         tab_bar: &TabBar,
         colors: &TabBarColors,
     ) {
-        let bar_y = size_info.padding_y() - tab_bar.height_px;
-        let bar_height = tab_bar.height_px;
-        let bar_width = size_info.width() - size_info.padding_x() * 2.0;
-
-        if bar_height <= 0.0 || tab_bar.titles.is_empty() {
+        let tab_lines = (tab_bar.height_px / size_info.cell_height()).ceil() as usize;
+        if tab_lines == 0 || tab_bar.titles.is_empty() {
             return;
         }
 
+        // The tab bar occupies the bottom `tab_lines` grid lines.
+        // Its top edge in pixel coordinates:
+        let bar_y = size_info.padding_y()
+            + size_info.screen_lines() as f32 * size_info.cell_height();
+        let bar_height = tab_lines as f32 * size_info.cell_height();
+        let bar_width = size_info.width() - size_info.padding_x() * 2.0;
+
         let mut rects = Vec::new();
 
-        // Tab bar background.
+        // Tab bar full-width background.
         rects.push(RenderRect::new(
             size_info.padding_x(),
             bar_y,
@@ -1452,11 +1458,11 @@ impl Display {
                 1.0,
             ));
 
-            // Active tab indicator (bottom border).
+            // Active tab indicator (top border).
             if is_active {
                 rects.push(RenderRect::new(
                     tab_x + 2.0,
-                    bar_y + bar_height - 3.0,
+                    bar_y + 1.0,
                     tab_w - 5.0,
                     2.0,
                     colors.active_text,
@@ -1480,13 +1486,9 @@ impl Display {
 
         renderer.draw_rects(size_info, &glyph_cache.font_metrics(), rects);
 
-        // Draw tab title text using grid coordinates mapped to the tab bar area.
-        // Temporarily resize the renderer with a shifted padding_y so that
-        // grid line 0 maps to the top of the tab bar instead of the grid.
-        let tab_size_info = size_info.with_padding_y_offset(-bar_height);
-        renderer.resize(&tab_size_info);
-
-        let line = 0;
+        // Draw tab title text at the reserved grid lines.
+        let text_line = size_info.screen_lines();
+        let cell_w = size_info.cell_width();
 
         for (i, title) in tab_bar.titles.iter().enumerate() {
             let tab_x = size_info.padding_x() + i as f32 * tab_w;
@@ -1503,44 +1505,36 @@ impl Display {
                 colors.inactive_bg
             };
 
-            // Compute grid column from pixel position.
-            let col = ((tab_x + 4.0 - size_info.padding_x()) / tab_size_info.cell_width())
-                .max(0.0) as usize;
-
-            // Truncate title to fit within tab width.
-            let max_chars = ((tab_w - 8.0) / tab_size_info.cell_width()).max(1.0) as usize;
+            let col = ((tab_x + 4.0 - size_info.padding_x()) / cell_w).max(0.0) as usize;
+            let max_chars = ((tab_w - 8.0) / cell_w).max(1.0) as usize;
             let display_title: String = title.chars().take(max_chars).collect();
 
             if !display_title.is_empty() {
                 renderer.draw_string(
-                    Point::new(line, Column(col)),
+                    Point::new(text_line, Column(col)),
                     text_color,
                     bg_color,
                     display_title.chars(),
-                    &tab_size_info,
+                    size_info,
                     glyph_cache,
                 );
             }
         }
 
-        // Draw "+" text on new-tab button.
+        // Draw "+" text.
         if tab_bar.config.show_new_button {
             let btn_x = size_info.width() - size_info.padding_x() - new_button_w + 4.0;
-            let col = ((btn_x + new_button_w * 0.3 - size_info.padding_x())
-                / tab_size_info.cell_width())
+            let col = ((btn_x + new_button_w * 0.3 - size_info.padding_x()) / cell_w)
                 .max(0.0) as usize;
             renderer.draw_string(
-                Point::new(line, Column(col)),
+                Point::new(text_line, Column(col)),
                 colors.text,
                 colors.inactive_bg,
                 "+".chars(),
-                &tab_size_info,
+                size_info,
                 glyph_cache,
             );
         }
-
-        // Restore the main projection for the grid.
-        renderer.resize(size_info);
     }
 
     /// Draw an indicator for the position of a line in history.

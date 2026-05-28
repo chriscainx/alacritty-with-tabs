@@ -339,6 +339,19 @@ impl Renderer {
         }
     }
 
+    /// Set the viewport to cover the full window (no padding clipping).
+    #[inline]
+    pub fn set_full_viewport(&self, size: &SizeInfo) {
+        unsafe {
+            gl::Viewport(
+                0,
+                0,
+                size.width() as i32,
+                size.height() as i32,
+            );
+        }
+    }
+
     /// Resize the renderer.
     pub fn resize(&self, size_info: &SizeInfo) {
         self.set_viewport(size_info);
