@@ -105,7 +105,7 @@ impl TabBar {
 
         let tab_count = self.titles.len();
         let close_button_width = if self.config.show_close_button {
-            self.height_px * 0.7
+            size_info.cell_width() * 1.5
         } else {
             0.0
         };
@@ -117,7 +117,9 @@ impl TabBar {
         let available_width =
             size_info.width() - size_info.padding_x() * 2.0 - new_button_width;
         let tab_width = if tab_count > 0 {
-            (available_width / tab_count as f32).min(240.0).max(80.0)
+            (available_width / tab_count as f32)
+                .min(size_info.cell_width() * 15.0)
+                .max(size_info.cell_width() * 5.0)
         } else {
             available_width
         };
@@ -131,10 +133,10 @@ impl TabBar {
         let left = size_info.padding_x();
         for (i, _) in self.titles.iter().enumerate() {
             let tab_x = left + i as f32 * tab_width;
-            let tab_right = (tab_x + tab_width).min(new_btn_x - 2.0);
+            let tab_right = (tab_x + tab_width).min(new_btn_x);
 
             if mouse_x >= tab_x && mouse_x < tab_right {
-                if self.config.show_close_button && mouse_x >= tab_right - close_button_width - 4.0
+                if self.config.show_close_button && mouse_x >= tab_right - close_button_width
                 {
                     return Some(TabBarHit::CloseButton(i));
                 }
