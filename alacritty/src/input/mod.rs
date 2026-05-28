@@ -103,6 +103,11 @@ pub trait ActionContext<T: EventListener> {
     fn create_new_window(&mut self, _tabbing_id: Option<String>) {}
     #[cfg(not(target_os = "macos"))]
     fn create_new_window(&mut self) {}
+    fn create_new_tab(&mut self) {}
+    fn close_tab(&mut self) {}
+    fn select_next_tab(&mut self) {}
+    fn select_prev_tab(&mut self) {}
+    fn select_tab(&mut self, _index: usize) {}
     fn change_font_size(&mut self, _delta: f32) {}
     fn reset_font_size(&mut self) {}
     fn pop_message(&mut self) {}
@@ -440,6 +445,35 @@ impl<T: EventListener> Execute<T> for Action {
             Action::SelectTab9 => ctx.window().select_tab_at_index(8),
             #[cfg(target_os = "macos")]
             Action::SelectLastTab => ctx.window().select_last_tab(),
+            // Non-macOS: use custom tab system.
+            #[cfg(not(target_os = "macos"))]
+            Action::CreateNewTab => ctx.create_new_tab(),
+            #[cfg(not(target_os = "macos"))]
+            Action::CloseTab => ctx.close_tab(),
+            #[cfg(not(target_os = "macos"))]
+            Action::SelectNextTab => ctx.select_next_tab(),
+            #[cfg(not(target_os = "macos"))]
+            Action::SelectPreviousTab => ctx.select_prev_tab(),
+            #[cfg(not(target_os = "macos"))]
+            Action::SelectTab1 => ctx.select_tab(0),
+            #[cfg(not(target_os = "macos"))]
+            Action::SelectTab2 => ctx.select_tab(1),
+            #[cfg(not(target_os = "macos"))]
+            Action::SelectTab3 => ctx.select_tab(2),
+            #[cfg(not(target_os = "macos"))]
+            Action::SelectTab4 => ctx.select_tab(3),
+            #[cfg(not(target_os = "macos"))]
+            Action::SelectTab5 => ctx.select_tab(4),
+            #[cfg(not(target_os = "macos"))]
+            Action::SelectTab6 => ctx.select_tab(5),
+            #[cfg(not(target_os = "macos"))]
+            Action::SelectTab7 => ctx.select_tab(6),
+            #[cfg(not(target_os = "macos"))]
+            Action::SelectTab8 => ctx.select_tab(7),
+            #[cfg(not(target_os = "macos"))]
+            Action::SelectTab9 => ctx.select_tab(8),
+            #[cfg(not(target_os = "macos"))]
+            Action::SelectLastTab => ctx.select_tab(usize::MAX),
             _ => (),
         }
     }

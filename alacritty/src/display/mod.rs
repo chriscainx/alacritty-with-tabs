@@ -56,6 +56,7 @@ use crate::renderer::rects::{RenderLine, RenderLines, RenderRect};
 use crate::renderer::{self, GlyphCache, Renderer, platform};
 use crate::scheduler::{Scheduler, TimerId, Topic};
 use crate::string::{ShortenDirection, StrShortener};
+use crate::tab::{TabBar, TabBarColors};
 
 pub mod color;
 pub mod content;
@@ -263,6 +264,16 @@ impl SizeInfo<f32> {
     #[inline]
     pub fn reserve_lines(&mut self, count: usize) {
         self.screen_lines = cmp::max(self.screen_lines.saturating_sub(count), MIN_SCREEN_LINES);
+    }
+
+    /// Add extra top padding for UI elements like a tab bar.
+    ///
+    /// This increases `padding_y` and recalculates `screen_lines` accordingly.
+    #[inline]
+    pub fn add_top_padding(&mut self, pixels: f32) {
+        self.padding_y += pixels;
+        let lines = (self.height - 2. * self.padding_y) / self.cell_height;
+        self.screen_lines = cmp::max(lines as usize, MIN_SCREEN_LINES);
     }
 
     /// Check if coordinates are inside the terminal grid.
@@ -779,6 +790,8 @@ impl Display {
         message_buffer: &MessageBuffer,
         config: &UiConfig,
         search_state: &mut SearchState,
+        tab_bar: Option<&TabBar>,
+        tab_colors: Option<&TabBarColors>,
     ) {
         // Collect renderable content before the terminal is dropped.
         let mut content = RenderableContent::new(config, self, &terminal, search_state);
@@ -836,6 +849,18 @@ impl Display {
         self.make_current();
 
         self.renderer.clear(background_color, config.window_opacity());
+
+        // Draw tab bar if present.
+        if let (Some(tab_bar), Some(colors)) = (tab_bar, tab_colors) {
+            Self::draw_tab_bar_inner(
+                &mut self.renderer,
+                &mut self.glyph_cache,
+                &self.size_info,
+                tab_bar,
+                colors,
+            );
+        }
+
         let mut lines = RenderLines::new();
 
         // Optimize loop hint comparator.
@@ -1344,6 +1369,96 @@ impl Display {
 
         let glyph_cache = &mut self.glyph_cache;
         self.renderer.draw_string(point, fg, bg, timing.chars(), &self.size_info, glyph_cache);
+    }
+
+    /// Draw the tab bar in the padding area above the terminal grid.
+    fn draw_tab_bar_inner(
+        renderer: &mut Renderer,
+        glyph_cache: &mut GlyphCache,
+        size_info: &SizeInfo,
+        tab_bar: &TabBar,
+        colors: &TabBarColors,
+    ) {
+        let bar_y = size_info.padding_y() - tab_bar.height_px;
+        let bar_height = tab_bar.height_px;
+        let bar_width = size_info.width() - size_info.padding_x() * 2.0;
+
+        if bar_height <= 0.0 || tab_bar.titles.is_empty() {
+            return;
+        }
+
+        let mut rects = Vec::new();
+
+        // Tab bar background.
+        rects.push(RenderRect::new(
+            size_info.padding_x(),
+            bar_y,
+            bar_width,
+            bar_height,
+            colors.bar_bg,
+            1.0,
+        ));
+
+        let tab_count = tab_bar.titles.len();
+        let new_button_w = if tab_bar.config.show_new_button {
+            bar_height
+        } else {
+            0.0
+        };
+        let available_w = bar_width - new_button_w;
+        let tab_w = if tab_count > 0 {
+            (available_w / tab_count as f32).min(240.0).max(80.0)
+        } else {
+            available_w
+        };
+
+        // Draw each tab background.
+        for (i, _title) in tab_bar.titles.iter().enumerate() {
+            let tab_x = size_info.padding_x() + i as f32 * tab_w;
+            let is_active = i == tab_bar.active_index;
+
+            let bg_color = if is_active {
+                colors.active_bg
+            } else {
+                colors.inactive_bg
+            };
+
+            rects.push(RenderRect::new(
+                tab_x,
+                bar_y + 1.0,
+                tab_w - 1.0,
+                bar_height - 2.0,
+                bg_color,
+                1.0,
+            ));
+
+            // Active tab indicator (bottom border).
+            if is_active {
+                rects.push(RenderRect::new(
+                    tab_x + 2.0,
+                    bar_y + bar_height - 3.0,
+                    tab_w - 5.0,
+                    2.0,
+                    colors.active_text,
+                    1.0,
+                ));
+            }
+        }
+
+        // "+" new tab button background.
+        if tab_bar.config.show_new_button {
+            let btn_x = size_info.width() - size_info.padding_x() - new_button_w + 4.0;
+            rects.push(RenderRect::new(
+                btn_x,
+                bar_y + 4.0,
+                new_button_w - 12.0,
+                bar_height - 8.0,
+                colors.inactive_bg,
+                1.0,
+            ));
+        }
+
+        renderer.draw_rects(size_info, &glyph_cache.font_metrics(), rects);
     }
 
     /// Draw an indicator for the position of a line in history.

@@ -389,6 +389,41 @@ impl ApplicationHandler<Event> for Processor {
                     error!("Could not open window: {err:?}");
                 }
             },
+            // Tab management.
+            (EventType::CreateTab, Some(window_id)) => {
+                if let Some(window_context) = self.windows.get_mut(window_id) {
+                    if let Err(err) = window_context.create_new_tab(&self.proxy) {
+                        error!("Could not create tab: {err:?}");
+                    }
+                }
+            },
+            (EventType::CloseTab, Some(window_id)) => {
+                if let Some(window_context) = self.windows.get_mut(window_id) {
+                    if !window_context.close_active_tab() {
+                        // Last tab: treat as window close.
+                        let _ = self.windows.remove(window_id);
+                        self.scheduler.unschedule_window(*window_id);
+                        if self.windows.is_empty() && !self.cli_options.daemon {
+                            event_loop.exit();
+                        }
+                    }
+                }
+            },
+            (EventType::SelectNextTab, Some(window_id)) => {
+                if let Some(window_context) = self.windows.get_mut(window_id) {
+                    window_context.next_tab();
+                }
+            },
+            (EventType::SelectPreviousTab, Some(window_id)) => {
+                if let Some(window_context) = self.windows.get_mut(window_id) {
+                    window_context.prev_tab();
+                }
+            },
+            (EventType::SelectTab(index), Some(window_id)) => {
+                if let Some(window_context) = self.windows.get_mut(window_id) {
+                    window_context.switch_tab(index);
+                }
+            },
             // Shutdown all windows.
             #[cfg(unix)]
             (EventType::Shutdown, _) => event_loop.exit(),
@@ -556,6 +591,13 @@ pub enum EventType {
     #[cfg(unix)]
     Shutdown,
     Frame,
+
+    // Tab management events (cross-platform).
+    CreateTab,
+    CloseTab,
+    SelectNextTab,
+    SelectPreviousTab,
+    SelectTab(usize),
 }
 
 impl From<TerminalEvent> for EventType {
@@ -900,6 +942,41 @@ impl<'a, N: Notify + 'a, T: EventListener> input::ActionContext<T> for ActionCon
         let _ = self
             .event_proxy
             .send_event(Event::new(EventType::CreateWindow(WindowOptions::default()), None));
+    }
+
+    fn create_new_tab(&mut self) {
+        let window_id = self.display.window.id();
+        let _ = self
+            .event_proxy
+            .send_event(Event::new(EventType::CreateTab, window_id));
+    }
+
+    fn close_tab(&mut self) {
+        let window_id = self.display.window.id();
+        let _ = self
+            .event_proxy
+            .send_event(Event::new(EventType::CloseTab, window_id));
+    }
+
+    fn select_next_tab(&mut self) {
+        let window_id = self.display.window.id();
+        let _ = self
+            .event_proxy
+            .send_event(Event::new(EventType::SelectNextTab, window_id));
+    }
+
+    fn select_prev_tab(&mut self) {
+        let window_id = self.display.window.id();
+        let _ = self
+            .event_proxy
+            .send_event(Event::new(EventType::SelectPreviousTab, window_id));
+    }
+
+    fn select_tab(&mut self, index: usize) {
+        let window_id = self.display.window.id();
+        let _ = self
+            .event_proxy
+            .send_event(Event::new(EventType::SelectTab(index), window_id));
     }
 
     fn spawn_daemon<I, S>(&self, program: &str, args: I)
@@ -1933,6 +2010,11 @@ impl input::Processor<EventProxy, ActionContext<'_, Notifier, EventProxy>> {
                 EventType::Message(_)
                 | EventType::ConfigReload(_)
                 | EventType::CreateWindow(_)
+                | EventType::CreateTab
+                | EventType::CloseTab
+                | EventType::SelectNextTab
+                | EventType::SelectPreviousTab
+                | EventType::SelectTab(_)
                 | EventType::Frame => (),
             },
             WinitEvent::WindowEvent { event, .. } => {

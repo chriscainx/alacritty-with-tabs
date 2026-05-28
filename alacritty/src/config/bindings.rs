@@ -223,6 +223,9 @@ pub enum Action {
     /// Create new window in a tab.
     CreateNewTab,
 
+    /// Close the current tab.
+    CloseTab,
+
     /// Toggle fullscreen.
     ToggleFullscreen,
 
@@ -571,6 +574,21 @@ pub fn platform_key_bindings() -> Vec<KeyBinding> {
     let mut bindings = bindings!(
         KeyBinding;
         Enter, ModifiersState::ALT; Action::ToggleFullscreen;
+
+        // Tab management.
+        "t",    ModifiersState::CONTROL | ModifiersState::SHIFT;                 Action::CreateNewTab;
+        "w",    ModifiersState::CONTROL | ModifiersState::SHIFT;                 Action::CloseTab;
+        Tab,    ModifiersState::CONTROL;                                         Action::SelectNextTab;
+        Tab,    ModifiersState::CONTROL | ModifiersState::SHIFT;                 Action::SelectPreviousTab;
+        "1",    ModifiersState::CONTROL;                                         Action::SelectTab1;
+        "2",    ModifiersState::CONTROL;                                         Action::SelectTab2;
+        "3",    ModifiersState::CONTROL;                                         Action::SelectTab3;
+        "4",    ModifiersState::CONTROL;                                         Action::SelectTab4;
+        "5",    ModifiersState::CONTROL;                                         Action::SelectTab5;
+        "6",    ModifiersState::CONTROL;                                         Action::SelectTab6;
+        "7",    ModifiersState::CONTROL;                                         Action::SelectTab7;
+        "8",    ModifiersState::CONTROL;                                         Action::SelectTab8;
+        "9",    ModifiersState::CONTROL;                                         Action::SelectLastTab;
     );
     bindings.extend(common_keybindings());
     bindings
