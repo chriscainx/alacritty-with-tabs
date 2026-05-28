@@ -249,10 +249,11 @@ impl WindowContext {
         proxy: EventLoopProxy<Event>,
     ) -> Result<Self, Box<dyn Error>> {
         // Compute tab bar height and reserve grid lines before creating the PTY.
-        let tab_bar_height = (display.size_info.cell_height() * 1.6).ceil();
+        let mut tab_bar = TabBar::new(config.tab_bar.clone());
+        tab_bar.compute_height(display.size_info.cell_height());
         let tab_bar_lines =
-            (tab_bar_height / display.size_info.cell_height()).ceil() as usize;
-        display.tab_bar_height = tab_bar_height;
+            (tab_bar.height_px / display.size_info.cell_height()).ceil() as usize;
+        display.tab_bar_height = tab_bar.height_px;
         display.tab_bar_lines = tab_bar_lines;
         display.size_info.reserve_lines(tab_bar_lines);
 
@@ -270,9 +271,7 @@ impl WindowContext {
             TabId(0),
         )?;
 
-        let mut tab_bar = TabBar::new(config.tab_bar.clone());
         tab_bar.titles.push(first_tab.title.clone());
-        tab_bar.compute_height(display.size_info.cell_height());
 
         let preserve_title = first_tab.preserve_title;
         let title = first_tab.title;
