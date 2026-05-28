@@ -85,6 +85,16 @@ keybinding action, or by executing the `alacritty msg create-window` subcommand.
 
 ## Multi-Tab
 
+> **Branch: `feature/windows-tabs`** — This is an experimental feature not
+> present in upstream Alacritty. It introduces invasive architectural changes
+> to `WindowContext`, the event loop (`Processor`), and the display subsystem
+> to support multiple independent terminal sessions within a single window.
+>
+> Unlike macOS native tabbing (which delegates to `NSWindow`), this
+> implementation renders a custom tab bar at the bottom of the terminal grid
+> and manages per-tab PTY / `Term` lifecycle entirely within the Alacritty
+> process.
+
 Alacritty supports multiple terminal sessions within a single window through a
 tab bar at the bottom of the terminal. Each tab is an independent terminal
 session with its own shell process.
