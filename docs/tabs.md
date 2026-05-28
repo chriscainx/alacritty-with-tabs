@@ -102,6 +102,35 @@ show_new_button = true
 show_close_button = true
 ```
 
+### Schema Compatibility
+
+The `[tab_bar]` section is **additive** — it does not modify or conflict with
+any existing configuration keys. All fields have defaults, so omitting the
+section entirely preserves Alacritty's existing behavior.
+
+| Scenario | Behavior |
+|----------|----------|
+| No `[tab_bar]` in config | All defaults: tab bar enabled, 2× cell height, both buttons shown |
+| `[tab_bar]` present but partial | Missing fields use their defaults |
+| Config serialized (e.g. `alacritty migrate`) | `[tab_bar]` is emitted with current values |
+| Upstream config → this branch | `[tab_bar]` absent → uses defaults (no error) |
+| **This branch's config → upstream Alacritty** | **Error**: `deny_unknown_fields` rejects the `tab_bar` key |
+
+> ⚠️ Because `UiConfig` derives `#[serde(deny_unknown_fields)]`, a config file
+> containing `[tab_bar]` **will not parse** on upstream Alacritty. This is a
+> one-way incompatibility: branch configs must be stripped of `[tab_bar]`
+> before being used with upstream builds.
+
+**No existing config keys are affected.** The tab subsystem introduces only the
+new `[tab_bar]` section with four fields:
+
+| Field | Type | Default | Description |
+|-------|------|---------|-------------|
+| `enabled` | `bool` | `true` | Show the tab bar |
+| `height` | `u32` | `0` | Height in px (0 = auto: 2 × cell height) |
+| `show_new_button` | `bool` | `true` | Show the "+" button |
+| `show_close_button` | `bool` | `true` | Show "×" on each tab |
+
 ## Key Bindings
 
 ### Windows / Linux
