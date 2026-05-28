@@ -8,7 +8,7 @@ use std::mem;
 use std::os::unix::io::{AsRawFd, RawFd};
 use std::rc::Rc;
 use std::sync::Arc;
-use std::time::Instant;
+use std::time::{Duration, Instant};
 
 use glutin::config::Config as GlutinConfig;
 use glutin::display::GetGlDisplay;
@@ -83,6 +83,11 @@ pub struct WindowContext {
 
     /// Event loop proxy for sending events back to the main loop.
     event_proxy: EventLoopProxy<Event>,
+
+    /// Time of last single-click on a tab, for double-click detection.
+    last_tab_click_time: Option<Instant>,
+    /// Index of the tab that was last single-clicked.
+    last_tab_click_index: usize,
 
     window_config: ParsedOptions,
     config: Rc<UiConfig>,
@@ -300,6 +305,8 @@ impl WindowContext {
             next_tab_id: 1,
             latest_mouse_pos: None,
             event_proxy: proxy,
+            last_tab_click_time: None,
+            last_tab_click_index: 0,
             message_buffer: Default::default(),
             window_config: Default::default(),
             modifiers: Default::default(),
@@ -474,7 +481,25 @@ impl WindowContext {
     /// Handle a click on the tab bar.
     fn handle_tab_bar_click(&mut self, hit: TabBarHit) {
         match hit {
-            TabBarHit::Tab(index) => self.switch_tab(index),
+            TabBarHit::Tab(index) => {
+                let now = Instant::now();
+                // Double-click on the same tab → close it.
+                if let Some(last_time) = self.last_tab_click_time {
+                    if index == self.last_tab_click_index
+                        && now.duration_since(last_time) < Duration::from_millis(500)
+                    {
+                        self.last_tab_click_time = None;
+                        let _ = self.event_proxy.send_event(Event::new(
+                            crate::event::EventType::CloseTab,
+                            self.display.window.id(),
+                        ));
+                        return;
+                    }
+                }
+                self.last_tab_click_time = Some(now);
+                self.last_tab_click_index = index;
+                self.switch_tab(index);
+            },
             TabBarHit::CloseButton(_index) => {
                 let _ = self.event_proxy.send_event(Event::new(
                     crate::event::EventType::CloseTab,
