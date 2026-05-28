@@ -250,6 +250,7 @@ impl WindowContext {
     ) -> Result<Self, Box<dyn Error>> {
         // Compute tab bar height and reserve space before creating the PTY.
         let tab_bar_height = (display.size_info.cell_height() * 1.6).ceil();
+        display.tab_bar_height = tab_bar_height;
         display.size_info.add_top_padding(tab_bar_height);
 
         // Mark renderer for resize so the projection matrix accounts for

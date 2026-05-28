@@ -394,6 +394,10 @@ pub struct Display {
     /// The renderer update that takes place only once before the actual rendering.
     pub pending_renderer_update: Option<RendererUpdate>,
 
+    /// Height reserved for the tab bar at the top of the window.
+    /// Added to padding_y during handle_update to keep the grid below the tab bar.
+    pub tab_bar_height: f32,
+
     /// The ime on the given display.
     pub ime: Ime,
 
@@ -560,6 +564,7 @@ impl Display {
             cursor_hidden: Default::default(),
             meter: Default::default(),
             ime: Default::default(),
+            tab_bar_height: 0.0,
         })
     }
 
@@ -725,6 +730,11 @@ impl Display {
         let message_bar_lines = message_buffer.message().map_or(0, |m| m.text(&new_size).len());
         let search_lines = usize::from(search_active);
         new_size.reserve_lines(message_bar_lines + search_lines);
+
+        // Reserve space for the tab bar if configured.
+        if self.tab_bar_height > 0.0 {
+            new_size.add_top_padding(self.tab_bar_height);
+        }
 
         // Update resize increments.
         if config.window.resize_increments {
