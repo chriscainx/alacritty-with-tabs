@@ -73,10 +73,12 @@ impl TabBar {
 
     /// Recompute the tab bar height from font metrics.
     ///
-    /// If `config.height` is 0, uses `cell_height * 1.6` as the auto height.
+    /// If `config.height` is 0, uses `cell_height * 1.6` rounded up to
+    /// the nearest cell boundary for clean grid alignment.
     pub fn compute_height(&mut self, cell_height: f32) {
         if self.config.height == 0 {
-            self.height_px = (cell_height * 1.6).ceil();
+            let raw = cell_height * 1.6;
+            self.height_px = (raw / cell_height).ceil() * cell_height;
         } else {
             self.height_px = self.config.height as f32;
         }

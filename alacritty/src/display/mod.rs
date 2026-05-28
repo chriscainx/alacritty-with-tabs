@@ -1415,13 +1415,13 @@ impl Display {
 
         let mut rects = Vec::new();
 
-        // Tab bar full-width background — DEBUG: bright cyan to verify position.
+        // Tab bar full-width background.
         rects.push(RenderRect::new(
             size_info.padding_x(),
             bar_y,
             bar_width,
             bar_height,
-            Rgb::new(0, 255, 255),
+            colors.bar_bg,
             1.0,
         ));
 
@@ -1486,8 +1486,8 @@ impl Display {
 
         renderer.draw_rects(size_info, &glyph_cache.font_metrics(), rects);
 
-        // Draw tab title text at the reserved grid lines.
-        let text_line = size_info.screen_lines();
+        // Draw tab title text at the reserved grid lines, centered vertically.
+        let text_line = size_info.screen_lines() + (tab_lines.saturating_sub(1) / 2);
         let cell_w = size_info.cell_width();
 
         for (i, title) in tab_bar.titles.iter().enumerate() {
