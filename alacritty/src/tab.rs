@@ -10,6 +10,7 @@ use alacritty_terminal::event_loop::Notifier;
 use alacritty_terminal::sync::FairMutex;
 use alacritty_terminal::term::Term;
 
+use crate::config::tab_bar::{TabBarConfig, TabBarPosition};
 use crate::display::color::Rgb;
 use crate::display::SizeInfo;
 use crate::event::{
@@ -46,40 +47,6 @@ pub struct Tab {
     pub master_fd: RawFd,
     #[cfg(not(windows))]
     pub shell_pid: u32,
-}
-
-/// Configuration for the tab bar appearance.
-#[derive(Debug, Clone, PartialEq)]
-pub struct TabBarConfig {
-    /// Whether the tab bar is enabled.
-    pub enabled: bool,
-    /// Height in pixels (0 = automatic: cell_height * 1.6).
-    pub height: u32,
-    /// Position of the tab bar: "top" or "bottom".
-    pub position: TabBarPosition,
-    /// Show the new-tab "+" button.
-    pub show_new_button: bool,
-    /// Show close "×" buttons on each tab.
-    pub show_close_button: bool,
-}
-
-impl Default for TabBarConfig {
-    fn default() -> Self {
-        Self {
-            enabled: true,
-            height: 0,
-            position: TabBarPosition::Top,
-            show_new_button: true,
-            show_close_button: true,
-        }
-    }
-}
-
-/// Where the tab bar is placed relative to the terminal grid.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum TabBarPosition {
-    Top,
-    Bottom,
 }
 
 /// Visual state of the tab bar, updated each frame before rendering.

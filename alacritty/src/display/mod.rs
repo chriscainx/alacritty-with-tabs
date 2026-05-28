@@ -276,6 +276,16 @@ impl SizeInfo<f32> {
         self.screen_lines = cmp::max(lines as usize, MIN_SCREEN_LINES);
     }
 
+    /// Return a copy with `padding_y` offset by `delta` pixels.
+    ///
+    /// Used for rendering UI elements in the padding area (e.g., tab bar text).
+    #[inline]
+    pub fn with_padding_y_offset(&self, delta: f32) -> Self {
+        let mut copy = *self;
+        copy.padding_y += delta;
+        copy
+    }
+
     /// Check if coordinates are inside the terminal grid.
     ///
     /// The padding, message bar or search are not counted as part of the grid.
@@ -1459,6 +1469,63 @@ impl Display {
         }
 
         renderer.draw_rects(size_info, &glyph_cache.font_metrics(), rects);
+
+        // Draw tab title text using grid coordinates mapped to the tab bar area.
+        // Create a temporary SizeInfo with padding_y shifted up by bar_height,
+        // so grid line 0 maps to the top of the tab bar.
+        let tab_size_info = size_info.with_padding_y_offset(-bar_height);
+        let line = 0;
+
+        for (i, title) in tab_bar.titles.iter().enumerate() {
+            let tab_x = size_info.padding_x() + i as f32 * tab_w;
+            let is_active = i == tab_bar.active_index;
+
+            let text_color = if is_active {
+                colors.active_text
+            } else {
+                colors.text
+            };
+            let bg_color = if is_active {
+                colors.active_bg
+            } else {
+                colors.inactive_bg
+            };
+
+            // Compute grid column from pixel position.
+            let col = ((tab_x + 4.0 - size_info.padding_x()) / tab_size_info.cell_width())
+                .max(0.0) as usize;
+
+            // Truncate title to fit within tab width.
+            let max_chars = ((tab_w - 8.0) / tab_size_info.cell_width()).max(1.0) as usize;
+            let display_title: String = title.chars().take(max_chars).collect();
+
+            if !display_title.is_empty() {
+                renderer.draw_string(
+                    Point::new(line, Column(col)),
+                    text_color,
+                    bg_color,
+                    display_title.chars(),
+                    &tab_size_info,
+                    glyph_cache,
+                );
+            }
+        }
+
+        // Draw "+" text on new-tab button.
+        if tab_bar.config.show_new_button {
+            let btn_x = size_info.width() - size_info.padding_x() - new_button_w + 4.0;
+            let col = ((btn_x + new_button_w * 0.3 - size_info.padding_x())
+                / tab_size_info.cell_width())
+                .max(0.0) as usize;
+            renderer.draw_string(
+                Point::new(line, Column(col)),
+                colors.text,
+                colors.inactive_bg,
+                "+".chars(),
+                &tab_size_info,
+                glyph_cache,
+            );
+        }
     }
 
     /// Draw an indicator for the position of a line in history.

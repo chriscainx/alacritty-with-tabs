@@ -43,7 +43,7 @@ use crate::event::{
 use crate::logging::LOG_TARGET_IPC_CONFIG;
 use crate::message_bar::MessageBuffer;
 use crate::scheduler::Scheduler;
-use crate::tab::{Tab, TabBar, TabBarConfig, TabBarHit, TabId};
+use crate::tab::{Tab, TabBar, TabBarHit, TabId};
 use crate::{input, renderer};
 
 /// Event context for one individual Alacritty window.
@@ -266,7 +266,7 @@ impl WindowContext {
             TabId(0),
         )?;
 
-        let mut tab_bar = TabBar::new(TabBarConfig::default());
+        let mut tab_bar = TabBar::new(config.tab_bar.clone());
         tab_bar.titles.push(first_tab.title.clone());
         tab_bar.compute_height(display.size_info.cell_height());
 
@@ -740,6 +740,13 @@ impl WindowContext {
                 self.modifiers.state(),
             );
             self.mouse.hint_highlight_dirty = false;
+        }
+
+        // Sync window title back to the active tab.
+        let current_title = self.display.window.title().to_owned();
+        if current_title != self.active_title {
+            self.tab_bar.titles[self.active_tab_index] = current_title.clone();
+            self.active_title = current_title;
         }
 
         if self.dirty

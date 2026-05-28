@@ -32,6 +32,7 @@ use crate::config::general::General;
 use crate::config::mouse::Mouse;
 use crate::config::scrolling::Scrolling;
 use crate::config::selection::Selection;
+use crate::config::tab_bar::TabBarConfig;
 use crate::config::terminal::Terminal;
 use crate::config::window::WindowConfig;
 
@@ -62,6 +63,9 @@ pub struct UiConfig {
 
     /// Window configuration.
     pub window: WindowConfig,
+
+    /// Tab bar configuration.
+    pub tab_bar: TabBarConfig,
 
     /// Mouse configuration.
     pub mouse: Mouse,
