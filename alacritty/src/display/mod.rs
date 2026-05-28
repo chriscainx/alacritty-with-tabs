@@ -1481,9 +1481,11 @@ impl Display {
         renderer.draw_rects(size_info, &glyph_cache.font_metrics(), rects);
 
         // Draw tab title text using grid coordinates mapped to the tab bar area.
-        // Create a temporary SizeInfo with padding_y shifted up by bar_height,
-        // so grid line 0 maps to the top of the tab bar.
+        // Temporarily resize the renderer with a shifted padding_y so that
+        // grid line 0 maps to the top of the tab bar instead of the grid.
         let tab_size_info = size_info.with_padding_y_offset(-bar_height);
+        renderer.resize(&tab_size_info);
+
         let line = 0;
 
         for (i, title) in tab_bar.titles.iter().enumerate() {
@@ -1536,6 +1538,9 @@ impl Display {
                 glyph_cache,
             );
         }
+
+        // Restore the main projection for the grid.
+        renderer.resize(size_info);
     }
 
     /// Draw an indicator for the position of a line in history.
