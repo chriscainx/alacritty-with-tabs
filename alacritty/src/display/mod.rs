@@ -1381,11 +1381,20 @@ impl Display {
             return;
         }
 
+        let ch = size_info.cell_height();
+        let cw = size_info.cell_width();
+
+        // Visual margins, proportional to cell size so they scale with font / HiDPI.
+        let gap = ch * 0.1;              // inter-element spacing (~1-2px at 16px cell)
+        let text_pad = cw * 0.25;        // horizontal padding around tab text (~4px)
+        let indicator_h = ch * 0.12;     // active tab indicator height (~2px)
+        let btn_pad = ch * 0.25;         // button internal padding (~4px)
+
         // The tab bar occupies the bottom `tab_lines` grid lines.
         // Its top edge in pixel coordinates:
         let bar_y = size_info.padding_y()
-            + size_info.screen_lines() as f32 * size_info.cell_height();
-        let bar_height = tab_lines as f32 * size_info.cell_height();
+            + size_info.screen_lines() as f32 * ch;
+        let bar_height = tab_lines as f32 * ch;
         let bar_width = size_info.width() - size_info.padding_x() * 2.0;
 
         let mut rects = Vec::new();
@@ -1408,7 +1417,7 @@ impl Display {
         };
         let available_w = bar_width - new_button_w;
         let tab_w = if tab_count > 0 {
-            (available_w / tab_count as f32).min(240.0).max(80.0)
+            (available_w / tab_count as f32).min(cw * 15.0).max(cw * 5.0)
         } else {
             available_w
         };
@@ -1425,10 +1434,10 @@ impl Display {
             };
 
             rects.push(RenderRect::new(
-                tab_x,
-                bar_y + 1.0,
-                tab_w - 1.0,
-                bar_height - 2.0,
+                tab_x + gap,
+                bar_y + gap,
+                tab_w - gap * 2.0,
+                bar_height - gap * 2.0,
                 bg_color,
                 1.0,
             ));
@@ -1436,10 +1445,10 @@ impl Display {
             // Active tab indicator (top border).
             if is_active {
                 rects.push(RenderRect::new(
-                    tab_x + 2.0,
-                    bar_y + 1.0,
-                    tab_w - 5.0,
-                    2.0,
+                    tab_x + text_pad,
+                    bar_y + gap,
+                    tab_w - text_pad * 2.0,
+                    indicator_h,
                     colors.active_text,
                     1.0,
                 ));
@@ -1448,12 +1457,12 @@ impl Display {
 
         // "+" new tab button background.
         if tab_bar.config.show_new_button {
-            let btn_x = size_info.width() - size_info.padding_x() - new_button_w + 4.0;
+            let btn_x = size_info.width() - size_info.padding_x() - new_button_w + text_pad;
             rects.push(RenderRect::new(
                 btn_x,
-                bar_y + 4.0,
-                new_button_w - 12.0,
-                bar_height - 8.0,
+                bar_y + btn_pad,
+                new_button_w - btn_pad * 2.0,
+                bar_height - btn_pad * 2.0,
                 colors.inactive_bg,
                 1.0,
             ));
@@ -1466,7 +1475,6 @@ impl Display {
         // Use the bottom line of the tab bar for better visual balance
         // when the bar is an even number of lines (e.g. 2).
         let text_line = size_info.screen_lines() + tab_lines - 1;
-        let cell_w = size_info.cell_width();
 
         for (i, title) in tab_bar.titles.iter().enumerate() {
             let tab_x = size_info.padding_x() + i as f32 * tab_w;
@@ -1483,8 +1491,8 @@ impl Display {
                 colors.inactive_bg
             };
 
-            let col = ((tab_x + 4.0 - size_info.padding_x()) / cell_w).max(0.0) as usize;
-            let max_chars = ((tab_w - 8.0) / cell_w).max(1.0) as usize;
+            let col = ((tab_x + text_pad - size_info.padding_x()) / cw).max(0.0) as usize;
+            let max_chars = ((tab_w - text_pad * 2.0) / cw).max(1.0) as usize;
             let display_title: String = title.chars().take(max_chars).collect();
 
             if !display_title.is_empty() {
@@ -1500,8 +1508,8 @@ impl Display {
 
             // Close button (×).
             if tab_bar.config.show_close_button {
-                let cx = tab_x + tab_w - cell_w * 1.2;
-                let col = ((cx - size_info.padding_x()) / cell_w).max(0.0) as usize;
+                let cx = tab_x + tab_w - cw * 1.2;
+                let col = ((cx - size_info.padding_x()) / cw).max(0.0) as usize;
                 renderer.draw_string(
                     Point::new(text_line, Column(col)),
                     colors.close_button,
@@ -1515,10 +1523,9 @@ impl Display {
 
         // "+" button text.
         if tab_bar.config.show_new_button {
-            let btn_x = size_info.width() - size_info.padding_x() - new_button_w + 4.0;
-            // Center the "+" horizontally within the button.
-            let btn_center = btn_x + (new_button_w - 12.0) * 0.5;
-            let col = ((btn_center - size_info.padding_x()) / cell_w).max(0.0) as usize;
+            let btn_x = size_info.width() - size_info.padding_x() - new_button_w + text_pad;
+            let btn_center = btn_x + (new_button_w - btn_pad * 2.0) * 0.5;
+            let col = ((btn_center - size_info.padding_x()) / cw).max(0.0) as usize;
             renderer.draw_string(
                 Point::new(text_line, Column(col)),
                 colors.text,
