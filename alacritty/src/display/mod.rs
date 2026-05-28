@@ -1438,7 +1438,7 @@ impl Display {
             available_w
         };
 
-        // Draw each tab background.
+        // Draw each tab background and active indicator.
         for (i, _title) in tab_bar.titles.iter().enumerate() {
             let tab_x = size_info.padding_x() + i as f32 * tab_w;
             let is_active = i == tab_bar.active_index;
@@ -1469,14 +1469,6 @@ impl Display {
                     1.0,
                 ));
             }
-
-            // Close button (small "×" indicator).
-            if tab_bar.config.show_close_button {
-                let cx = tab_x + tab_w - bar_height * 0.45 - 3.0;
-                let cy = bar_y + bar_height * 0.25;
-                let cw = bar_height * 0.4;
-                rects.push(RenderRect::new(cx, cy, cw, cw, colors.close_button, 1.0));
-            }
         }
 
         // "+" new tab button background.
@@ -1492,9 +1484,10 @@ impl Display {
             ));
         }
 
+        // Draw all rectangles first.
         renderer.draw_rects(size_info, &glyph_cache.font_metrics(), rects);
 
-        // Draw tab title text at the reserved grid lines, centered vertically.
+        // Draw text on top: tab titles, close buttons, "+" button.
         let text_line = size_info.screen_lines() + (tab_lines.saturating_sub(1) / 2);
         let cell_w = size_info.cell_width();
 
@@ -1527,9 +1520,23 @@ impl Display {
                     glyph_cache,
                 );
             }
+
+            // Close button (×).
+            if tab_bar.config.show_close_button {
+                let cx = tab_x + tab_w - cell_w * 1.2;
+                let col = ((cx - size_info.padding_x()) / cell_w).max(0.0) as usize;
+                renderer.draw_string(
+                    Point::new(text_line, Column(col)),
+                    colors.close_button,
+                    bg_color,
+                    "×".chars(),
+                    size_info,
+                    glyph_cache,
+                );
+            }
         }
 
-        // Draw "+" text.
+        // "+" button text.
         if tab_bar.config.show_new_button {
             let btn_x = size_info.width() - size_info.padding_x() - new_button_w + 4.0;
             let col = ((btn_x + new_button_w * 0.3 - size_info.padding_x()) / cell_w)
