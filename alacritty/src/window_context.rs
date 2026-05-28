@@ -475,35 +475,11 @@ impl WindowContext {
     fn handle_tab_bar_click(&mut self, hit: TabBarHit) {
         match hit {
             TabBarHit::Tab(index) => self.switch_tab(index),
-            TabBarHit::CloseButton(index) => {
-                if index == self.active_tab_index {
-                    if !self.close_active_tab() {
-                        // Last tab: close the entire window.
-                        let _ = self.event_proxy.send_event(Event::new(
-                            crate::event::EventType::CloseTab,
-                            self.display.window.id(),
-                        ));
-                    }
-                } else {
-                    // Close a background tab.
-                    let vec_index = if index > self.active_tab_index {
-                        index - 1
-                    } else {
-                        index
-                    };
-                    if vec_index < self.inactive_tabs.len() {
-                        let tab = self.inactive_tabs.remove(vec_index);
-                        let _ = tab.notifier.0.send(
-                            alacritty_terminal::event_loop::Msg::Shutdown,
-                        );
-                        self.tab_bar.titles.remove(index);
-                        if self.active_tab_index > index {
-                            self.active_tab_index -= 1;
-                        }
-                        self.tab_bar.active_index = self.active_tab_index;
-                        self.dirty = true;
-                    }
-                }
+            TabBarHit::CloseButton(_index) => {
+                let _ = self.event_proxy.send_event(Event::new(
+                    crate::event::EventType::CloseTab,
+                    self.display.window.id(),
+                ));
             },
             TabBarHit::NewButton => {
                 let _ = self.event_proxy.send_event(Event::new(
