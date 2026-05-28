@@ -1469,6 +1469,14 @@ impl Display {
                     1.0,
                 ));
             }
+
+            // Close button (small "×" indicator).
+            if tab_bar.config.show_close_button {
+                let cx = tab_x + tab_w - bar_height * 0.45 - 3.0;
+                let cy = bar_y + bar_height * 0.25;
+                let cw = bar_height * 0.4;
+                rects.push(RenderRect::new(cx, cy, cw, cw, colors.close_button, 1.0));
+            }
         }
 
         // "+" new tab button background.
