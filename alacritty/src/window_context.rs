@@ -399,13 +399,15 @@ impl WindowContext {
             return;
         }
 
-        let vec_index = if index > self.active_tab_index {
+        let old_active = self.active_tab_index;
+
+        let vec_index = if index > old_active {
             index - 1
         } else {
             index
         };
 
-        self.tab_bar.titles.swap(self.active_tab_index, index);
+        self.tab_bar.titles.swap(old_active, index);
 
         let mut target = self.inactive_tabs.remove(vec_index);
         mem::swap(&mut self.terminal, &mut target.terminal);
@@ -428,7 +430,13 @@ impl WindowContext {
 
         self.display.window.set_title(self.active_title.clone());
 
-        self.inactive_tabs.insert(vec_index, target);
+        // Insert the old active state at its correct logical position.
+        let old_vec_index = if old_active > index {
+            old_active - 1
+        } else {
+            old_active
+        };
+        self.inactive_tabs.insert(old_vec_index, target);
 
         self.active_tab_index = index;
         self.tab_bar.active_index = index;
