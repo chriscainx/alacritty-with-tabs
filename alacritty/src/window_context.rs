@@ -483,16 +483,38 @@ impl WindowContext {
         match hit {
             TabBarHit::Tab(index) => {
                 let now = Instant::now();
-                // Double-click on the same tab → close it.
+                // Double-click on the same tab → close it without switching first.
                 if let Some(last_time) = self.last_tab_click_time {
                     if index == self.last_tab_click_index
                         && now.duration_since(last_time) < Duration::from_millis(500)
                     {
                         self.last_tab_click_time = None;
-                        let _ = self.event_proxy.send_event(Event::new(
-                            crate::event::EventType::CloseTab,
-                            self.display.window.id(),
-                        ));
+                        if index == self.active_tab_index {
+                            // Close the active tab.
+                            let _ = self.event_proxy.send_event(Event::new(
+                                crate::event::EventType::CloseTab,
+                                self.display.window.id(),
+                            ));
+                        } else {
+                            // Close a background tab directly (no switch needed).
+                            let vec_index = if index > self.active_tab_index {
+                                index - 1
+                            } else {
+                                index
+                            };
+                            if vec_index < self.inactive_tabs.len() {
+                                let tab = self.inactive_tabs.remove(vec_index);
+                                let _ = tab.notifier.0.send(
+                                    alacritty_terminal::event_loop::Msg::Shutdown,
+                                );
+                                self.tab_bar.titles.remove(index);
+                                if self.active_tab_index > index {
+                                    self.active_tab_index -= 1;
+                                }
+                                self.tab_bar.active_index = self.active_tab_index;
+                                self.dirty = true;
+                            }
+                        }
                         return;
                     }
                 }
@@ -500,11 +522,32 @@ impl WindowContext {
                 self.last_tab_click_index = index;
                 self.switch_tab(index);
             },
-            TabBarHit::CloseButton(_index) => {
-                let _ = self.event_proxy.send_event(Event::new(
-                    crate::event::EventType::CloseTab,
-                    self.display.window.id(),
-                ));
+            TabBarHit::CloseButton(index) => {
+                if index == self.active_tab_index {
+                    let _ = self.event_proxy.send_event(Event::new(
+                        crate::event::EventType::CloseTab,
+                        self.display.window.id(),
+                    ));
+                } else {
+                    // Close a background tab directly.
+                    let vec_index = if index > self.active_tab_index {
+                        index - 1
+                    } else {
+                        index
+                    };
+                    if vec_index < self.inactive_tabs.len() {
+                        let tab = self.inactive_tabs.remove(vec_index);
+                        let _ = tab.notifier.0.send(
+                            alacritty_terminal::event_loop::Msg::Shutdown,
+                        );
+                        self.tab_bar.titles.remove(index);
+                        if self.active_tab_index > index {
+                            self.active_tab_index -= 1;
+                        }
+                        self.tab_bar.active_index = self.active_tab_index;
+                        self.dirty = true;
+                    }
+                }
             },
             TabBarHit::NewButton => {
                 let _ = self.event_proxy.send_event(Event::new(
