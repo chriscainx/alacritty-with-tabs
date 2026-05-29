@@ -772,6 +772,9 @@ impl WindowContext {
             shell_pid: self.shell_pid,
             preserve_title: self.preserve_title,
             config: &self.config,
+            active_title: &mut self.active_title,
+            tab_titles: &mut self.tab_bar.titles,
+            active_tab_index: self.active_tab_index,
             event_proxy,
             #[cfg(target_os = "macos")]
             event_loop,
@@ -805,13 +808,6 @@ impl WindowContext {
                 self.modifiers.state(),
             );
             self.mouse.hint_highlight_dirty = false;
-        }
-
-        // Sync window title back to the active tab.
-        let current_title = self.display.window.title().to_owned();
-        if current_title != self.active_title {
-            self.tab_bar.titles[self.active_tab_index] = current_title.clone();
-            self.active_title = current_title;
         }
 
         if self.dirty

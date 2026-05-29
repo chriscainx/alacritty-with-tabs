@@ -727,6 +727,12 @@ pub struct ActionContext<'a, N, T> {
     pub master_fd: RawFd,
     #[cfg(not(windows))]
     pub shell_pid: u32,
+    /// Currently active tab title (updated directly on Title events).
+    pub active_title: &'a mut String,
+    /// Tab bar title list.
+    pub tab_titles: &'a mut Vec<String>,
+    /// Index of the active tab.
+    pub active_tab_index: usize,
 }
 
 impl<'a, N: Notify + 'a, T: EventListener> input::ActionContext<T> for ActionContext<'a, N, T> {
@@ -1949,13 +1955,25 @@ impl input::Processor<EventProxy, ActionContext<'_, Notifier, EventProxy>> {
                 EventType::Terminal(event) => match event {
                     TerminalEvent::Title(title) => {
                         if !self.ctx.preserve_title && self.ctx.config.window.dynamic_title {
-                            self.ctx.window().set_title(title);
+                            self.ctx.window().set_title(title.clone());
+                        }
+                        // Always sync to the active tab title (unless user set a fixed title).
+                        if !self.ctx.preserve_title {
+                            *self.ctx.active_title = title.clone();
+                            if self.ctx.active_tab_index < self.ctx.tab_titles.len() {
+                                self.ctx.tab_titles[self.ctx.active_tab_index] = title;
+                            }
                         }
                     },
                     TerminalEvent::ResetTitle => {
                         let window_config = &self.ctx.config.window;
                         if !self.ctx.preserve_title && window_config.dynamic_title {
                             self.ctx.display.window.set_title(window_config.identity.title.clone());
+                        }
+                        let default_title = &self.ctx.config.window.identity.title;
+                        *self.ctx.active_title = default_title.clone();
+                        if self.ctx.active_tab_index < self.ctx.tab_titles.len() {
+                            self.ctx.tab_titles[self.ctx.active_tab_index] = default_title.clone();
                         }
                     },
                     TerminalEvent::Bell => {
