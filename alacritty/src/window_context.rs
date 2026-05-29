@@ -407,8 +407,6 @@ impl WindowContext {
             index
         };
 
-        self.tab_bar.titles.swap(old_active, index);
-
         let mut target = self.inactive_tabs.remove(vec_index);
         mem::swap(&mut self.terminal, &mut target.terminal);
         mem::swap(&mut self.notifier, &mut target.notifier);
@@ -429,6 +427,11 @@ impl WindowContext {
         }
 
         self.display.window.set_title(self.active_title.clone());
+
+        // Exchange titles in the tab bar: old active gets the stored (now in target),
+        // new active gets the live title (now in active_title).
+        self.tab_bar.titles[old_active] = target.title.clone();
+        self.tab_bar.titles[index] = self.active_title.clone();
 
         // Insert the old active state at its correct logical position.
         let old_vec_index = if old_active > index {

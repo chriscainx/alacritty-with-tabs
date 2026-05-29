@@ -1389,7 +1389,6 @@ impl Display {
         let gap = ch * 0.1;              // inter-element spacing (~1-2px at 16px cell)
         let text_pad = cw * 0.25;        // horizontal padding around tab text (~4px)
         let indicator_h = ch * 0.12;     // active tab indicator height (~2px)
-        let btn_pad = ch * 0.25;         // button internal padding (~4px)
 
         // The tab bar occupies the bottom `tab_lines` grid lines.
         // Its top edge in pixel coordinates:
@@ -1466,14 +1465,14 @@ impl Display {
             }
         }
 
-        // "+" new tab button background.
+        // "+" new tab button background — same height as tabs.
         if tab_bar.config.show_new_button {
             let btn_x = size_info.width() - size_info.padding_x() - new_button_w;
             rects.push(RenderRect::new(
-                btn_x,
-                bar_y + btn_pad,
-                new_button_w - btn_pad * 2.0,
-                bar_height - btn_pad * 2.0,
+                btn_x + gap,
+                bar_y + gap,
+                new_button_w - gap * 2.0,
+                bar_height - gap * 2.0,
                 colors.inactive_bg,
                 1.0,
             ));
@@ -1539,7 +1538,7 @@ impl Display {
         // "+" button text.
         if tab_bar.config.show_new_button {
             let btn_x = size_info.width() - size_info.padding_x() - new_button_w;
-            let btn_center = btn_x + (new_button_w - btn_pad * 2.0) * 0.5;
+            let btn_center = btn_x + new_button_w * 0.5;
             let col = ((btn_center - size_info.padding_x()) / cw).max(0.0) as usize;
             renderer.draw_string(
                 Point::new(text_line, Column(col)),
