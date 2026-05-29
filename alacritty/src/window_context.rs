@@ -347,7 +347,7 @@ impl WindowContext {
     /// (last remaining tab).
     pub fn close_active_tab(&mut self) -> bool {
         if self.inactive_tabs.is_empty() && self.tab_bar.titles.len() <= 1 {
-            return false;
+            return !self.config.tab_bar.close_on_last_tab;
         }
 
         let _ = self.notifier.0.send(Msg::Shutdown);
@@ -499,7 +499,7 @@ impl WindowContext {
                 // Double-click on the same tab → close it without switching first.
                 if let Some(last_time) = self.last_tab_click_time {
                     if index == self.last_tab_click_index
-                        && now.duration_since(last_time) < Duration::from_millis(500)
+                        && now.duration_since(last_time) < Duration::from_millis(self.config.tab_bar.double_click_timeout as u64)
                     {
                         self.last_tab_click_time = None;
                         if index == self.active_tab_index {

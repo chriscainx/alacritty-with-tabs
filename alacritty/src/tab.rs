@@ -113,10 +113,21 @@ impl TabBar {
         };
         let available_width =
             size_info.width() - size_info.padding_x() * 2.0 - new_button_width;
+        let cw = size_info.cell_width();
+        let max_w = if self.config.max_tab_width > 0 {
+            self.config.max_tab_width as f32
+        } else {
+            cw * 15.0
+        };
+        let min_w = if self.config.min_tab_width > 0 {
+            self.config.min_tab_width as f32
+        } else {
+            cw * 5.0
+        };
         let tab_width = if tab_count > 0 {
             (available_width / tab_count as f32)
-                .min(size_info.cell_width() * 15.0)
-                .max(size_info.cell_width() * 5.0)
+                .min(max_w)
+                .max(min_w)
         } else {
             available_width
         };

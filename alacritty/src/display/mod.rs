@@ -1417,8 +1417,18 @@ impl Display {
             0.0
         };
         let available_w = bar_width - new_button_w;
+        let max_w = if tab_bar.config.max_tab_width > 0 {
+            tab_bar.config.max_tab_width as f32
+        } else {
+            cw * 15.0
+        };
+        let min_w = if tab_bar.config.min_tab_width > 0 {
+            tab_bar.config.min_tab_width as f32
+        } else {
+            cw * 5.0
+        };
         let tab_w = if tab_count > 0 {
-            (available_w / tab_count as f32).min(cw * 15.0).max(cw * 5.0)
+            (available_w / tab_count as f32).min(max_w).max(min_w)
         } else {
             available_w
         };
