@@ -31,6 +31,7 @@ pub struct TabId(pub usize);
 /// state lives here. When active, the state is swapped into WindowContext's
 /// top-level fields.
 pub struct Tab {
+    #[allow(dead_code)]
     pub id: TabId,
     pub title: String,
     pub terminal: Arc<FairMutex<Term<EventProxy>>>,
@@ -83,6 +84,7 @@ impl TabBar {
     }
 
     /// Total number of tabs.
+    #[allow(dead_code)]
     pub fn len(&self) -> usize {
         self.titles.len()
     }

@@ -465,23 +465,28 @@ impl WindowContext {
         }
     }
 
+    #[allow(dead_code)]
     pub fn active_title(&self) -> &str {
         &self.active_title
     }
 
+    #[allow(dead_code)]
     pub fn tab_count(&self) -> usize {
         self.tab_bar.titles.len()
     }
 
+    #[allow(dead_code)]
     pub fn set_active_title(&mut self, title: String) {
         self.active_title = title.clone();
         self.tab_bar.titles[self.active_tab_index] = title;
     }
 
+    #[allow(dead_code)]
     pub fn tab_bar(&self) -> &TabBar {
         &self.tab_bar
     }
 
+    #[allow(dead_code)]
     pub fn tab_bar_mut(&mut self) -> &mut TabBar {
         &mut self.tab_bar
     }
