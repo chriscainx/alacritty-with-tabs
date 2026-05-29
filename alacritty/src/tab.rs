@@ -60,6 +60,8 @@ pub struct TabBar {
     pub active_index: usize,
     /// Pixel height of the tab bar (computed from config or font metrics).
     pub height_px: f32,
+    /// Whether the shell dropdown menu is open.
+    pub menu_open: bool,
 }
 
 impl TabBar {
@@ -69,6 +71,7 @@ impl TabBar {
             titles: Vec::new(),
             active_index: 0,
             height_px: 0.0,
+            menu_open: false,
         }
     }
 
@@ -100,20 +103,38 @@ impl TabBar {
         let bar_y = size_info.padding_y()
             + size_info.screen_lines() as f32 * size_info.cell_height();
         let bar_height = tab_lines as f32 * size_info.cell_height();
+        let cw = size_info.cell_width();
 
+        // Check dropdown menu items first (they appear above the tab bar).
+        if self.menu_open && !self.config.shells.is_empty() {
+            let menu_y_start = bar_y - self.config.shells.len() as f32 * bar_height;
+            if mouse_y >= menu_y_start && mouse_y < bar_y {
+                let menu_idx = ((mouse_y - menu_y_start) / bar_height) as usize;
+                if menu_idx < self.config.shells.len()
+                    && mouse_x >= size_info.padding_x()
+                    && mouse_x < size_info.width() - size_info.padding_x()
+                {
+                    return Some(TabBarHit::MenuShell(menu_idx));
+                }
+            }
+        }
+
+        // Main tab bar area.
         if mouse_y < bar_y || mouse_y > bar_y + bar_height {
             return None;
         }
 
         let tab_count = self.titles.len();
+        let has_dropdown = !self.config.shells.is_empty();
+        let dropdown_width = if has_dropdown { self.height_px } else { 0.0 };
         let new_button_width = if self.config.show_new_button {
             self.height_px
         } else {
             0.0
         };
+        let right_buttons = dropdown_width + new_button_width;
         let available_width =
-            size_info.width() - size_info.padding_x() * 2.0 - new_button_width;
-        let cw = size_info.cell_width();
+            size_info.width() - size_info.padding_x() * 2.0 - right_buttons;
         let max_w = if self.config.max_tab_width > 0 {
             self.config.max_tab_width as f32
         } else {
@@ -132,16 +153,22 @@ impl TabBar {
             available_width
         };
 
-        // "+" new tab button at the right edge.
-        let new_btn_start = size_info.width() - size_info.padding_x() - new_button_width;
-        if self.config.show_new_button && mouse_x >= new_btn_start {
+        // Right-side buttons: dropdown (▼) then new-tab (+).
+        let btn_start = size_info.width() - size_info.padding_x() - right_buttons;
+        if has_dropdown {
+            let dd_end = btn_start + dropdown_width;
+            if mouse_x >= btn_start && mouse_x < dd_end {
+                return Some(TabBarHit::DropdownToggle);
+            }
+        }
+        if self.config.show_new_button && mouse_x >= btn_start + dropdown_width {
             return Some(TabBarHit::NewButton);
         }
 
         let left = size_info.padding_x();
         for (i, _) in self.titles.iter().enumerate() {
             let tab_x = left + i as f32 * tab_width;
-            let tab_right = (tab_x + tab_width).min(new_btn_start);
+            let tab_right = (tab_x + tab_width).min(btn_start);
 
             if mouse_x >= tab_x && mouse_x < tab_right {
                 // Close button: ~1.2 cells from the right edge, matches visual "×".
@@ -166,6 +193,10 @@ pub enum TabBarHit {
     CloseButton(usize),
     /// Clicked on the "+" new-tab button.
     NewButton,
+    /// Clicked the dropdown arrow (▼) to toggle the shell menu.
+    DropdownToggle,
+    /// Clicked a shell entry in the dropdown menu.
+    MenuShell(usize),
 }
 
 /// Color scheme for the tab bar, derived from the terminal theme.

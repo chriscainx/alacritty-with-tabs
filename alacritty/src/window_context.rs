@@ -186,9 +186,14 @@ impl WindowContext {
         options: &WindowOptions,
         proxy: &EventLoopProxy<Event>,
         tab_id: TabId,
+        shell_override: Option<&alacritty_terminal::tty::Shell>,
+        initial_title: Option<&str>,
     ) -> Result<Tab, Box<dyn Error>> {
         let mut pty_config = config.pty_config();
         options.terminal_options.override_pty_config(&mut pty_config);
+        if let Some(shell) = shell_override {
+            pty_config.shell = Some(shell.clone());
+        }
 
         let preserve_title = options.window_identity.title.is_some();
 
@@ -223,7 +228,10 @@ impl WindowContext {
             event_proxy.send_event(TerminalEvent::CursorBlinkingChange.into());
         }
 
-        let title = config.window.identity.title.clone();
+        // Use provided title or fall back to config default.
+        let title = initial_title
+            .map(|t| t.to_owned())
+            .unwrap_or_else(|| config.window.identity.title.clone());
 
         Ok(Tab {
             id: tab_id,
@@ -273,6 +281,8 @@ impl WindowContext {
             &options,
             &proxy,
             TabId(0),
+            None,
+            None,
         )?;
 
         tab_bar.titles.push(first_tab.title.clone());
@@ -328,6 +338,40 @@ impl WindowContext {
             &options,
             proxy,
             tab_id,
+            None,
+            None,
+        )?;
+
+        let new_title = new_tab.title.clone();
+        let target_index = self.tab_bar.titles.len();
+
+        self.tab_bar.titles.push(new_title);
+        self.inactive_tabs.push(new_tab);
+        self.switch_tab(target_index);
+        self.dirty = true;
+
+        Ok(())
+    }
+
+    /// Create a new tab with a custom shell override.
+    pub fn create_new_tab_with_shell(
+        &mut self,
+        proxy: &EventLoopProxy<Event>,
+        shell: Option<alacritty_terminal::tty::Shell>,
+        shell_name: Option<&str>,
+    ) -> Result<(), Box<dyn Error>> {
+        let tab_id = TabId(self.next_tab_id);
+        self.next_tab_id += 1;
+
+        let options = WindowOptions::default();
+        let new_tab = Self::build_tab_session(
+            &self.display,
+            &self.config,
+            &options,
+            proxy,
+            tab_id,
+            shell.as_ref(),
+            shell_name,
         )?;
 
         let new_title = new_tab.title.clone();
@@ -498,6 +542,7 @@ impl WindowContext {
     fn handle_tab_bar_click(&mut self, hit: TabBarHit) {
         match hit {
             TabBarHit::Tab(index) => {
+                self.tab_bar.menu_open = false;
                 let now = Instant::now();
                 // Double-click on the same tab → close it without switching first.
                 if let Some(last_time) = self.last_tab_click_time {
@@ -539,6 +584,7 @@ impl WindowContext {
                 self.switch_tab(index);
             },
             TabBarHit::CloseButton(index) => {
+                self.tab_bar.menu_open = false;
                 if index == self.active_tab_index {
                     let _ = self.event_proxy.send_event(Event::new(
                         crate::event::EventType::CloseTab,
@@ -563,6 +609,27 @@ impl WindowContext {
                         self.tab_bar.active_index = self.active_tab_index;
                         self.dirty = true;
                     }
+                }
+            },
+            TabBarHit::DropdownToggle => {
+                self.tab_bar.menu_open = !self.tab_bar.menu_open;
+                self.dirty = true;
+            },
+            TabBarHit::MenuShell(shell_idx) => {
+                self.tab_bar.menu_open = false;
+                if shell_idx < self.config.tab_bar.shells.len() {
+                    let shell = self.config.tab_bar.shells[shell_idx].clone();
+                    let shell_override = alacritty_terminal::tty::Shell::new(
+                        shell.program.clone(),
+                        shell.args.clone(),
+                    );
+                    let proxy = self.event_proxy.clone();
+                    let shell_name = shell.name.clone();
+                    let _ = self.create_new_tab_with_shell(
+                        &proxy,
+                        Some(shell_override),
+                        Some(&shell_name),
+                    );
                 }
             },
             TabBarHit::NewButton => {

@@ -1410,12 +1410,15 @@ impl Display {
         ));
 
         let tab_count = tab_bar.titles.len();
+        let has_dropdown = !tab_bar.config.shells.is_empty();
+        let dropdown_w = if has_dropdown { bar_height } else { 0.0 };
         let new_button_w = if tab_bar.config.show_new_button {
             bar_height
         } else {
             0.0
         };
-        let available_w = bar_width - new_button_w;
+        let right_buttons = dropdown_w + new_button_w;
+        let available_w = bar_width - right_buttons;
         let max_w = if tab_bar.config.max_tab_width > 0 {
             tab_bar.config.max_tab_width as f32
         } else {
@@ -1463,6 +1466,19 @@ impl Display {
                     1.0,
                 ));
             }
+        }
+
+        // Dropdown toggle button (▼).
+        if has_dropdown {
+            let btn_x = size_info.width() - size_info.padding_x() - right_buttons;
+            rects.push(RenderRect::new(
+                btn_x + gap,
+                bar_y + gap,
+                dropdown_w - gap * 2.0,
+                bar_height - gap * 2.0,
+                colors.inactive_bg,
+                1.0,
+            ));
         }
 
         // "+" new tab button background — same height as tabs.
@@ -1535,6 +1551,21 @@ impl Display {
             }
         }
 
+        // Dropdown toggle text (▼).
+        if has_dropdown {
+            let btn_x = size_info.width() - size_info.padding_x() - right_buttons;
+            let btn_center = btn_x + dropdown_w * 0.5;
+            let col = ((btn_center - size_info.padding_x()) / cw).max(0.0) as usize;
+            renderer.draw_string(
+                Point::new(text_line, Column(col)),
+                colors.text,
+                colors.inactive_bg,
+                "▼".chars(),
+                size_info,
+                glyph_cache,
+            );
+        }
+
         // "+" button text.
         if tab_bar.config.show_new_button {
             let btn_x = size_info.width() - size_info.padding_x() - new_button_w;
@@ -1548,6 +1579,56 @@ impl Display {
                 size_info,
                 glyph_cache,
             );
+        }
+
+        // Dropdown shell menu (above the tab bar when open).
+        if tab_bar.menu_open && has_dropdown {
+            let menu_h = bar_height;
+            let menu_y = bar_y - tab_bar.config.shells.len() as f32 * menu_h;
+            let mut menu_rects = Vec::new();
+            for (i, _shell) in tab_bar.config.shells.iter().enumerate() {
+                let item_y = menu_y + i as f32 * menu_h;
+                menu_rects.push(RenderRect::new(
+                    size_info.padding_x(),
+                    item_y,
+                    bar_width,
+                    menu_h,
+                    colors.inactive_bg,
+                    1.0,
+                ));
+            }
+            renderer.draw_rects(size_info, &glyph_cache.font_metrics(), menu_rects);
+
+            // Thin separator lines between menu items.
+            let mut sep_rects = Vec::new();
+            for i in 1..tab_bar.config.shells.len() {
+                let sep_y = menu_y + i as f32 * menu_h;
+                sep_rects.push(RenderRect::new(
+                    size_info.padding_x(),
+                    sep_y,
+                    bar_width,
+                    gap,
+                    colors.bar_bg,
+                    1.0,
+                ));
+            }
+            if !sep_rects.is_empty() {
+                renderer.draw_rects(size_info, &glyph_cache.font_metrics(), sep_rects);
+            }
+
+            // Draw shell names.
+            let n = tab_bar.config.shells.len();
+            for (i, shell) in tab_bar.config.shells.iter().enumerate() {
+                let item_line = text_line.saturating_sub(tab_lines * (n - i));
+                renderer.draw_string(
+                    Point::new(item_line, Column(0)),
+                    colors.text,
+                    colors.inactive_bg,
+                    shell.name.chars(),
+                    size_info,
+                    glyph_cache,
+                );
+            }
         }
     }
 

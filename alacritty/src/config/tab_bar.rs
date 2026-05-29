@@ -54,6 +54,28 @@ pub struct TabBarConfig {
     ///
     /// Default: `true`.
     pub close_on_last_tab: bool,
+
+    /// Predefined shells available from the dropdown menu.
+    ///
+    /// Each entry defines a shell that can be opened in a new tab
+    /// by clicking the dropdown button (▼) and selecting the shell.
+    ///
+    /// Default: empty.
+    pub shells: Vec<ShellEntry>,
+}
+
+/// A predefined shell for the tab bar dropdown menu.
+#[derive(ConfigDeserialize, Serialize, Default, Debug, Clone, PartialEq)]
+pub struct ShellEntry {
+    /// Display name shown in the dropdown.
+    pub name: String,
+
+    /// Shell program to launch.
+    pub program: String,
+
+    /// Arguments passed to the shell program.
+    #[serde(default)]
+    pub args: Vec<String>,
 }
 
 impl Default for TabBarConfig {
@@ -67,6 +89,7 @@ impl Default for TabBarConfig {
             min_tab_width: 0,
             double_click_timeout: 500,
             close_on_last_tab: true,
+            shells: Vec::new(),
         }
     }
 }

@@ -100,7 +100,42 @@ show_new_button = true
 
 # Whether to show the "×" close button on each tab (default: true).
 show_close_button = true
+
+# Max/min tab width in pixels. 0 = auto (15×/5× cell width).
+max_tab_width = 0
+min_tab_width = 0
+
+# Double-click timeout for tab close (ms, default: 500).
+double_click_timeout = 500
+
+# Close window when the last tab is closed (default: true).
+close_on_last_tab = true
+
+# Predefined shells for the dropdown menu (▼ button).
+[[tab_bar.shells]]
+name = "PowerShell"
+program = "pwsh.exe"
+
+[[tab_bar.shells]]
+name = "CMD"
+program = "cmd.exe"
+
+[[tab_bar.shells]]
+name = "Git Bash"
+program = "C:\\Program Files\\Git\\bin\\bash.exe"
+args = ["-l"]
 ```
+
+### Shell Dropdown
+
+When `shells` is non-empty, a **▼** button appears to the left of the **+**
+button. Clicking it opens a popup menu above the tab bar listing all
+configured shells. Selecting a shell creates a new tab with that program.
+
+The initial tab title is set to the shell's display name (e.g., "PowerShell").
+
+Menu items are rendered at the same height as tabs, with thin separator lines
+between entries. Clicking anywhere outside the menu dismisses it.
 
 ### Schema Compatibility
 
