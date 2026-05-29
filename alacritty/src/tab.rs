@@ -146,7 +146,7 @@ impl TabBar {
             if mouse_x >= tab_x && mouse_x < tab_right {
                 // Close button: ~1.2 cells from the right edge, matches visual "×".
                 if self.config.show_close_button
-                    && mouse_x >= tab_right - size_info.cell_width() * 1.5
+                    && mouse_x >= tab_right - size_info.cell_width() * 2.0
                 {
                     return Some(TabBarHit::CloseButton(i));
                 }

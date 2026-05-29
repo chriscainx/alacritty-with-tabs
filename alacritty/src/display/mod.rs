@@ -1503,7 +1503,11 @@ impl Display {
             };
 
             let col = ((tab_x + text_pad - size_info.padding_x()) / cw).max(0.0) as usize;
-            let max_chars = ((tab_w - text_pad * 2.0) / cw).max(1.0) as usize;
+            let max_chars = if tab_bar.config.show_close_button {
+                ((tab_w - cw * 2.5) / cw).max(1.0) as usize
+            } else {
+                ((tab_w - text_pad * 2.0) / cw).max(1.0) as usize
+            };
             let display_title: String = title.chars().take(max_chars).collect();
 
             if !display_title.is_empty() {
@@ -1517,9 +1521,9 @@ impl Display {
                 );
             }
 
-            // Close button (×).
+            // Close button (×) with padding from edge.
             if tab_bar.config.show_close_button {
-                let cx = tab_x + tab_w - cw * 1.2;
+                let cx = tab_x + tab_w - cw * 1.8;
                 let col = ((cx - size_info.padding_x()) / cw).max(0.0) as usize;
                 renderer.draw_string(
                     Point::new(text_line, Column(col)),
