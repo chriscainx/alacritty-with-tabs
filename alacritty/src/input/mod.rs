@@ -103,11 +103,16 @@ pub trait ActionContext<T: EventListener> {
     fn create_new_window(&mut self, _tabbing_id: Option<String>) {}
     #[cfg(not(target_os = "macos"))]
     fn create_new_window(&mut self) {}
-    fn create_new_tab(&mut self) {}
-    fn close_tab(&mut self) {}
-    fn select_next_tab(&mut self) {}
-    fn select_prev_tab(&mut self) {}
-    fn select_tab(&mut self, _index: usize) {}
+    #[cfg(not(target_os = "macos"))]
+    fn create_new_tab(&mut self);
+    #[cfg(not(target_os = "macos"))]
+    fn close_tab(&mut self);
+    #[cfg(not(target_os = "macos"))]
+    fn select_next_tab(&mut self);
+    #[cfg(not(target_os = "macos"))]
+    fn select_prev_tab(&mut self);
+    #[cfg(not(target_os = "macos"))]
+    fn select_tab(&mut self, _index: usize);
     fn change_font_size(&mut self, _delta: f32) {}
     fn reset_font_size(&mut self) {}
     fn pop_message(&mut self) {}
@@ -1310,6 +1315,31 @@ mod tests {
         }
 
         fn semantic_word(&self, _point: Point) -> String {
+            unimplemented!();
+        }
+
+        #[cfg(not(target_os = "macos"))]
+        fn create_new_tab(&mut self) {
+            unimplemented!();
+        }
+
+        #[cfg(not(target_os = "macos"))]
+        fn close_tab(&mut self) {
+            unimplemented!();
+        }
+
+        #[cfg(not(target_os = "macos"))]
+        fn select_next_tab(&mut self) {
+            unimplemented!();
+        }
+
+        #[cfg(not(target_os = "macos"))]
+        fn select_prev_tab(&mut self) {
+            unimplemented!();
+        }
+
+        #[cfg(not(target_os = "macos"))]
+        fn select_tab(&mut self, _index: usize) {
             unimplemented!();
         }
     }

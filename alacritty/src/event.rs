@@ -944,6 +944,7 @@ impl<'a, N: Notify + 'a, T: EventListener> input::ActionContext<T> for ActionCon
             .send_event(Event::new(EventType::CreateWindow(WindowOptions::default()), None));
     }
 
+    #[cfg(not(target_os = "macos"))]
     fn create_new_tab(&mut self) {
         let window_id = self.display.window.id();
         let _ = self
@@ -951,6 +952,7 @@ impl<'a, N: Notify + 'a, T: EventListener> input::ActionContext<T> for ActionCon
             .send_event(Event::new(EventType::CreateTab, window_id));
     }
 
+    #[cfg(not(target_os = "macos"))]
     fn close_tab(&mut self) {
         let window_id = self.display.window.id();
         let _ = self
@@ -958,6 +960,7 @@ impl<'a, N: Notify + 'a, T: EventListener> input::ActionContext<T> for ActionCon
             .send_event(Event::new(EventType::CloseTab, window_id));
     }
 
+    #[cfg(not(target_os = "macos"))]
     fn select_next_tab(&mut self) {
         let window_id = self.display.window.id();
         let _ = self
@@ -965,6 +968,7 @@ impl<'a, N: Notify + 'a, T: EventListener> input::ActionContext<T> for ActionCon
             .send_event(Event::new(EventType::SelectNextTab, window_id));
     }
 
+    #[cfg(not(target_os = "macos"))]
     fn select_prev_tab(&mut self) {
         let window_id = self.display.window.id();
         let _ = self
@@ -972,6 +976,7 @@ impl<'a, N: Notify + 'a, T: EventListener> input::ActionContext<T> for ActionCon
             .send_event(Event::new(EventType::SelectPreviousTab, window_id));
     }
 
+    #[cfg(not(target_os = "macos"))]
     fn select_tab(&mut self, index: usize) {
         let window_id = self.display.window.id();
         let _ = self
