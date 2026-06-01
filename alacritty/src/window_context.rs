@@ -893,6 +893,7 @@ impl WindowContext {
         self.display.window.id()
     }
 
+    #[allow(dead_code)]
     pub fn write_ref_test_results(&self) {
         let mut grid = self.terminal.lock().grid().clone();
         grid.initialize_all();

@@ -4,7 +4,6 @@ use crate::ConfigMonitor;
 use glutin::config::GetGlConfig;
 use std::borrow::Cow;
 use std::cmp::min;
-use std::collections::hash_map::Entry;
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::error::Error;
 use std::ffi::OsStr;
@@ -450,28 +449,17 @@ impl ApplicationHandler<Event> for Processor {
                 }
             },
             (EventType::Terminal(TerminalEvent::Exit), Some(window_id)) => {
-                // Remove the closed terminal.
-                let window_context = match self.windows.entry(*window_id) {
-                    // Don't exit when terminal exits if user asked to hold the window.
-                    Entry::Occupied(window_context)
-                        if !window_context.get().display.window.hold =>
-                    {
-                        window_context.remove()
-                    },
-                    _ => return,
-                };
-
-                // Unschedule pending events.
-                self.scheduler.unschedule_window(window_context.id());
-
-                // Shutdown if no more terminals are open.
-                if self.windows.is_empty() && !self.cli_options.daemon {
-                    // Write ref tests of last window to disk.
-                    if self.config.debug.ref_test {
-                        window_context.write_ref_test_results();
+                if let Some(window_context) = self.windows.get_mut(window_id) {
+                    // Try to close just the tab first.
+                    if !window_context.close_active_tab() {
+                        // Last tab: remove the entire window.
+                        window_context.display.window.hold = false;
+                        let _ = self.windows.remove(window_id);
+                        self.scheduler.unschedule_window(*window_id);
+                        if self.windows.is_empty() && !self.cli_options.daemon {
+                            event_loop.exit();
+                        }
                     }
-
-                    event_loop.exit();
                 }
             },
             // NOTE: This event bypasses batching to minimize input latency.
