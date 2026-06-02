@@ -396,15 +396,24 @@ impl WindowContext {
 
         let _ = self.notifier.0.send(Msg::Shutdown);
 
-        if let Some(incoming) = self.inactive_tabs.pop() {
-            let removed_index = self.active_tab_index;
-            self.swap_active_with(incoming);
-            self.tab_bar.titles.remove(removed_index);
-            if self.active_tab_index >= self.tab_bar.titles.len() {
-                self.active_tab_index = self.tab_bar.titles.len().saturating_sub(1);
-            }
-            self.tab_bar.active_index = self.active_tab_index;
+        // Pick the tab visually to the right of the active one; if none, take
+        // the one to the left. `remove` is used instead of `pop` to avoid
+        // always taking the last-pushed element (which would skip over tabs).
+        let new_vec_index = if self.active_tab_index < self.inactive_tabs.len() {
+            self.active_tab_index
+        } else {
+            self.active_tab_index.saturating_sub(1)
+        };
+        let incoming = self.inactive_tabs.remove(new_vec_index);
+        let removed_index = self.active_tab_index;
+        self.swap_active_with(incoming);
+        self.tab_bar.titles.remove(removed_index);
+        if new_vec_index < self.active_tab_index {
+            self.active_tab_index -= 1;
+        } else if self.active_tab_index >= self.tab_bar.titles.len() {
+            self.active_tab_index = self.tab_bar.titles.len().saturating_sub(1);
         }
+        self.tab_bar.active_index = self.active_tab_index;
 
         self.dirty = true;
         true
