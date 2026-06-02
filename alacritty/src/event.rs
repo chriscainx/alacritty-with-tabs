@@ -399,12 +399,19 @@ impl ApplicationHandler<Event> for Processor {
             (EventType::CloseTab, Some(window_id)) => {
                 if let Some(window_context) = self.windows.get_mut(window_id) {
                     if !window_context.close_active_tab() {
-                        // Last tab: treat as window close.
+                        // Last tab: remove the window.
+                        window_context.display.window.hold = false;
                         let _ = self.windows.remove(window_id);
                         self.scheduler.unschedule_window(*window_id);
                         if self.windows.is_empty() && !self.cli_options.daemon {
                             event_loop.exit();
                         }
+                    } else if !window_context.display.window.hold {
+                        // Window X was pressed — cascade to close remaining tabs.
+                        let _ = self.proxy.send_event(Event::new(
+                            EventType::CloseTab,
+                            *window_id,
+                        ));
                     }
                 }
             },
@@ -2031,8 +2038,13 @@ impl input::Processor<EventProxy, ActionContext<'_, Notifier, EventProxy>> {
             WinitEvent::WindowEvent { event, .. } => {
                 match event {
                     WindowEvent::CloseRequested => {
-                        // User asked to close the window, so no need to hold it.
+                        // User asked to close the window. Release hold and
+                        // start closing tabs one by one; the last tab will
+                        // remove the window from Processor::user_event.
                         self.ctx.window().hold = false;
+                        #[cfg(not(target_os = "macos"))]
+                        self.ctx.close_tab();
+                        #[cfg(target_os = "macos")]
                         self.ctx.terminal.exit();
                     },
                     WindowEvent::ScaleFactorChanged { scale_factor, .. } => {

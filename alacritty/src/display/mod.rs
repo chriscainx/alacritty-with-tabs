@@ -901,6 +901,17 @@ impl Display {
             self.renderer.draw_cells(&size_info, glyph_cache, cells);
         }
 
+        // Draw dropdown shell menu on top of grid content.
+        if let (Some(tab_bar), Some(colors)) = (tab_bar, tab_colors) {
+            Self::draw_tab_bar_dropdown(
+                &mut self.renderer,
+                &mut self.glyph_cache,
+                &self.size_info,
+                tab_bar,
+                colors,
+            );
+        }
+
         let mut rects = lines.rects(&metrics, &size_info);
 
         if let Some(vi_cursor_point) = vi_cursor_point {
@@ -1581,54 +1592,79 @@ impl Display {
             );
         }
 
-        // Dropdown shell menu (above the tab bar when open).
-        if tab_bar.menu_open && has_dropdown {
-            let menu_h = bar_height;
-            let menu_y = bar_y - tab_bar.config.shells.len() as f32 * menu_h;
-            let mut menu_rects = Vec::new();
-            for (i, _shell) in tab_bar.config.shells.iter().enumerate() {
-                let item_y = menu_y + i as f32 * menu_h;
-                menu_rects.push(RenderRect::new(
-                    size_info.padding_x(),
-                    item_y,
-                    bar_width,
-                    menu_h,
-                    colors.inactive_bg,
-                    1.0,
-                ));
-            }
-            renderer.draw_rects(size_info, &glyph_cache.font_metrics(), menu_rects);
+    }
 
-            // Thin separator lines between menu items.
-            let mut sep_rects = Vec::new();
-            for i in 1..tab_bar.config.shells.len() {
-                let sep_y = menu_y + i as f32 * menu_h;
-                sep_rects.push(RenderRect::new(
-                    size_info.padding_x(),
-                    sep_y,
-                    bar_width,
-                    gap,
-                    colors.bar_bg,
-                    1.0,
-                ));
-            }
-            if !sep_rects.is_empty() {
-                renderer.draw_rects(size_info, &glyph_cache.font_metrics(), sep_rects);
-            }
+    /// Draw the dropdown shell menu — must be called AFTER grid rendering so it
+    /// overlays terminal content instead of being occluded by it.
+    fn draw_tab_bar_dropdown(
+        renderer: &mut Renderer,
+        glyph_cache: &mut GlyphCache,
+        size_info: &SizeInfo,
+        tab_bar: &TabBar,
+        colors: &TabBarColors,
+    ) {
+        let tab_lines = (tab_bar.height_px / size_info.cell_height()).ceil() as usize;
+        if tab_lines == 0 || !tab_bar.menu_open || tab_bar.config.shells.is_empty() {
+            return;
+        }
 
-            // Draw shell names.
-            let n = tab_bar.config.shells.len();
-            for (i, shell) in tab_bar.config.shells.iter().enumerate() {
-                let item_line = text_line.saturating_sub(tab_lines * (n - i));
+        let ch = size_info.cell_height();
+        let gap = ch * 0.1;
+        let bar_height = tab_lines as f32 * ch;
+        let bar_y = size_info.padding_y() + size_info.screen_lines() as f32 * ch;
+        let text_line = size_info.screen_lines() + tab_lines - 1;
+        let n = tab_bar.config.shells.len();
+        let menu_columns = size_info.columns();
+
+        // Fill each menu item background using draw_string with spaces,
+        // which goes through the text renderer's background pass (ONE, ZERO
+        // blend) — the same reliable path used by tab bar text backgrounds.
+        let spacer: String = " ".repeat(menu_columns);
+        for i in 0..n {
+            let item_line = text_line.saturating_sub(tab_lines * (n - i));
+            for line_offset in 0..tab_lines {
+                let line = item_line.saturating_sub(tab_lines - 1 - line_offset);
                 renderer.draw_string(
-                    Point::new(item_line, Column(0)),
+                    Point::new(line, Column(0)),
                     colors.text,
                     colors.inactive_bg,
-                    shell.name.chars(),
+                    spacer.chars(),
                     size_info,
                     glyph_cache,
                 );
             }
+        }
+
+        // Separator lines between menu items.
+        let bar_width = size_info.width() - size_info.padding_x() * 2.0;
+        let menu_y = bar_y - n as f32 * bar_height;
+        let mut sep_rects = Vec::with_capacity(n.saturating_sub(1));
+        for i in 1..n {
+            let sep_y = menu_y + i as f32 * bar_height;
+            sep_rects.push(RenderRect::new(
+                size_info.padding_x(),
+                sep_y,
+                bar_width,
+                gap,
+                colors.bar_bg,
+                1.0,
+            ));
+        }
+        if !sep_rects.is_empty() {
+            renderer.draw_rects(size_info, &glyph_cache.font_metrics(), sep_rects);
+        }
+
+        // Draw shell names on top of the filled backgrounds.
+        for (i, shell) in tab_bar.config.shells.iter().enumerate() {
+            let item_line = text_line.saturating_sub(tab_lines * (n - i));
+            renderer.draw_string(
+                Point::new(item_line, Column(0)),
+                colors.text,
+                colors.inactive_bg,
+                shell.name.chars(),
+                size_info,
+                glyph_cache,
+            );
         }
     }
 
