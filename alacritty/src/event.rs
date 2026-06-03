@@ -406,12 +406,6 @@ impl ApplicationHandler<Event> for Processor {
                         if self.windows.is_empty() && !self.cli_options.daemon {
                             event_loop.exit();
                         }
-                    } else if !window_context.display.window.hold {
-                        // Window X was pressed — cascade to close remaining tabs.
-                        let _ = self.proxy.send_event(Event::new(
-                            EventType::CloseTab,
-                            *window_id,
-                        ));
                     }
                 }
             },
